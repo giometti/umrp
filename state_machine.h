@@ -20,6 +20,11 @@
 #include "linux.h"
 #include "utils.h"
 
+extern const uint8_t mrp_test_dmac[ETH_ALEN];
+extern const uint8_t mrp_control_dmac[ETH_ALEN];
+extern const uint8_t mrp_itest_dmac[ETH_ALEN];
+extern const uint8_t mrp_icontrol_dmac[ETH_ALEN];
+
 struct mrp_port {
 	struct mrp			*mrp;
 	enum br_mrp_port_state_type	state;
