@@ -13,6 +13,7 @@
 #include <net/if.h>
 #include <errno.h>
 
+#include "ifdriver.h"
 #include "state_machine.h"
 #include "utils.h"
 #include "libnetlink.h"
@@ -89,13 +90,11 @@ static int mrp_nl_terminate(struct request *req, struct rtattr *afspec,
  * Public data & functions
  */
 
-int mrp_port_netlink_set_state(struct mrp_port *p,
+int netlink_port_set_state(struct mrp_port *p,
 			       enum br_mrp_port_state_type state)
 {
 	struct rtattr *afspec, *afmrp, *af_submrp;
 	struct request req = { 0 };
-
-	p->state = state;
 
 	mrp_nl_port_prepare(p, RTM_SETLINK, &req, &afspec, &afmrp,
 			    &af_submrp, IFLA_BRIDGE_MRP_PORT_STATE);
@@ -104,13 +103,12 @@ int mrp_port_netlink_set_state(struct mrp_port *p,
 
 	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
+alias_ifdriver_port_set_state(netlink_port_set_state);
 
-int mrp_netlink_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role)
+int netlink_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role)
 {
 	struct rtattr *afspec, *afmrp, *af_submrp;
 	struct request req = { 0 };
-
-	mrp->ring_role = role;
 
 	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec, &afmrp,
 			      &af_submrp, IFLA_BRIDGE_MRP_RING_ROLE);
@@ -125,13 +123,12 @@ int mrp_netlink_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role)
 
 	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
+alias_ifdriver_set_ring_role(netlink_set_ring_role);
 
-int mrp_netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
+int netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
 {
 	struct rtattr *afspec, *afmrp, *af_submrp;
 	struct request req = { 0 };
-
-	mrp->in_role = role;
 
 	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec, &afmrp,
 			      &af_submrp, IFLA_BRIDGE_MRP_IN_ROLE);
@@ -147,8 +144,9 @@ int mrp_netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
 
 	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
+alias_ifdriver_set_in_role(netlink_set_in_role);
 
-int mrp_netlink_flush(struct mrp *mrp)
+int netlink_flush(struct mrp *mrp)
 {
 	struct request req = { 0 };
 	struct rtattr *protinfo;
@@ -181,10 +179,11 @@ int mrp_netlink_flush(struct mrp *mrp)
 
 	return 0;
 }
+alias_ifdriver_flush(netlink_flush);
 
 /* INIT & UNINIT functions */
 
-int mrp_netlink_init(void)
+int netlink_init(void)
 {
 	if (rtnl_open(&rth, 0) < 0) {
 		pr_err("Cannot open rtnetlink");
@@ -193,8 +192,10 @@ int mrp_netlink_init(void)
 
 	return 0;
 }
+alias_ifdriver_init(netlink_init);
 
-void mrp_netlink_uninit(void)
+void netlink_uninit(void)
 {
 	rtnl_close(&rth);
 }
+alias_ifdriver_uninit(netlink_uninit);

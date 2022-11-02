@@ -135,6 +135,8 @@ struct mrp {
 
 int mrp_recv(unsigned char *buf, int buf_len, struct sockaddr_ll *sl,
 	     socklen_t salen);
+int mrp_port_set_state(struct mrp_port *p,
+			      enum br_mrp_port_state_type state);
 void mrp_port_link_change(struct mrp_port *p, bool up);
 void mrp_destroy(uint32_t ifindex, uint32_t ring_nr, bool offload);
 void mrp_mac_change(uint32_t ifindex, unsigned char *mac);
@@ -152,6 +154,8 @@ int mrp_add(uint32_t br_ifindex, uint32_t ring_nr, uint32_t pport,
 int mrp_del(uint32_t br_ifindex, uint32_t ring_nr);
 void mrp_uninit(void);
 
+int mrp_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role);
+int mrp_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role);
 void mrp_set_mrm_init(struct mrp* mrp);
 void mrp_set_mrc_init(struct mrp* mrp);
 

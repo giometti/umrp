@@ -63,7 +63,13 @@ include_directories(${LibNL_INCLUDE_DIR} ${LibEV_INCLUDE_DIR} ${LibMNL_INCLUDE_D
 
 add_executable(mrp mrp.c)
 
-add_executable(mrp_server mrp_server.c packet.c server_socket.c server_cmds.c state_machine.c netlink.c timer.c libnetlink.c utils.c print.c)
+if (NOT DEFINED driver OR "x${driver}" STREQUAL "xnetlink")
+	set (driver_sources "ifdriver_netlink.c")
+else ()
+	message(FATAL_ERROR "unknow driver ${driver}.")
+endif ()
+
+add_executable(mrp_server mrp_server.c packet.c server_socket.c server_cmds.c state_machine.c timer.c libnetlink.c utils.c print.c ${driver_sources})
 target_link_libraries(mrp_server ${LibNL_LIBRARY} ${LibNL_GENL_LIBRARY}
     ${LibEV_LIBRARY} ${LibMNL_LIBRARY} ${LibCFM_LIBRARY})
 

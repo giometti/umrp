@@ -21,7 +21,7 @@
 #include "server_cmds.h"
 #include "state_machine.h"
 #include "list.h"
-#include "netlink.h"
+#include "ifdriver.h"
 #include "cfm_netlink.h"
 #include "print.h"
 
@@ -191,8 +191,8 @@ int CTL_init(void)
 		return -1;
 	}
 
-	if (mrp_netlink_init()) {
-		pr_err("mrp netlink init failed");
+	if (ifdriver_init()) {
+		pr_err("ifdriver init failed");
 		return -1;
 	}
 
@@ -206,7 +206,7 @@ int CTL_init(void)
 
 void CTL_cleanup(void)
 {
-	mrp_netlink_uninit();
+	ifdriver_uninit();
 	netlink_uninit();
 	mrp_uninit();
 }

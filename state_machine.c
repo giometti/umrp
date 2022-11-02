@@ -11,7 +11,7 @@
 #include "state_machine.h"
 #include "server_cmds.h"
 #include "utils.h"
-#include "netlink.h"
+#include "ifdriver.h"
 #include "packet.h"
 #include "pdu.h"
 #include "cfm_netlink.h"
@@ -51,6 +51,18 @@ static struct mrp *mrp_get_mrp(uint32_t ifindex, uint32_t peer_mepid)
 	}
 
 	return NULL;
+}
+
+int mrp_port_set_state(struct mrp_port *p, enum br_mrp_port_state_type state)
+{
+	int ret;
+
+        p->state = state;
+
+        ret = ifdriver_port_set_state(p, state);
+	if (ret)
+		pr_warn("cannot set state %d for port %s", state, p->ifname);
+	return ret;
 }
 
 static bool mrp_is_port_up(const struct mrp_port *p)
@@ -128,6 +140,29 @@ static char *mrp_get_mic_state(enum mrp_mic_state_type state)
 	}
 }
 
+int mrp_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role)
+{
+	int ret;
+
+        mrp->ring_role = role;
+
+        ret = ifdriver_set_ring_role(mrp, role);
+	if (ret)
+		pr_warn("cannot set state %d for bridge %s", role, mrp->ifname);
+	return ret;
+}
+int mrp_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
+{
+	int ret;
+
+	mrp->in_role = role;
+
+        ret = ifdriver_set_in_role(mrp, role);
+	if (ret)
+		pr_warn("cannot set state %d for bridge %s", role, mrp->ifname);
+	return ret;
+}
+
 void mrp_set_mrm_init(struct mrp *mrp)
 {
 	mrp->add_test = false;
@@ -185,9 +220,9 @@ static int mrp_set_mra_role(struct mrp *mrp)
 
 	mrp_set_mrm_state(mrp, MRP_MRM_STATE_AC_STAT1);
 
-	mrp_port_netlink_set_state(mrp->p_port, BR_MRP_PORT_STATE_BLOCKED);
-	mrp_port_netlink_set_state(mrp->s_port, BR_MRP_PORT_STATE_BLOCKED);
-	err = mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
+	mrp_port_set_state(mrp->p_port, BR_MRP_PORT_STATE_BLOCKED);
+	mrp_port_set_state(mrp->s_port, BR_MRP_PORT_STATE_BLOCKED);
+	err = mrp_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
 	if (err)
 		return err;
 
@@ -216,9 +251,9 @@ static int mrp_set_mrm_role(struct mrp *mrp)
 
 	mrp_set_mrm_state(mrp, MRP_MRM_STATE_AC_STAT1);
 
-	mrp_port_netlink_set_state(mrp->p_port, BR_MRP_PORT_STATE_BLOCKED);
-	mrp_port_netlink_set_state(mrp->s_port, BR_MRP_PORT_STATE_BLOCKED);
-	err = mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
+	mrp_port_set_state(mrp->p_port, BR_MRP_PORT_STATE_BLOCKED);
+	mrp_port_set_state(mrp->s_port, BR_MRP_PORT_STATE_BLOCKED);
+	err = mrp_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
 	if (err)
 		return err;
 
@@ -247,9 +282,9 @@ static int mrp_set_mrc_role(struct mrp *mrp)
 
 	mrp_set_mrc_state(mrp, MRP_MRC_STATE_AC_STAT1);
 
-	mrp_port_netlink_set_state(mrp->p_port, BR_MRP_PORT_STATE_BLOCKED);
-	mrp_port_netlink_set_state(mrp->s_port, BR_MRP_PORT_STATE_BLOCKED);
-	err = mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
+	mrp_port_set_state(mrp->p_port, BR_MRP_PORT_STATE_BLOCKED);
+	mrp_port_set_state(mrp->s_port, BR_MRP_PORT_STATE_BLOCKED);
+	err = mrp_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
 	if (err)
 		return err;
 
@@ -273,12 +308,12 @@ static int mrp_set_mim_role(struct mrp *mrp)
 	mrp->mim_state = MRP_MIM_STATE_AC_STAT1;
 	mrp->mic_state = MRP_MIC_STATE_AC_STAT1;
 
-	err = mrp_netlink_set_in_role(mrp, BR_MRP_IN_ROLE_MIM);
+	err = mrp_set_in_role(mrp, BR_MRP_IN_ROLE_MIM);
 	if (err)
 		return err;
 
 	mrp_set_mim_state(mrp, MRP_MIM_STATE_AC_STAT1);
-	mrp_port_netlink_set_state(mrp->i_port, BR_MRP_PORT_STATE_BLOCKED);
+	mrp_port_set_state(mrp->i_port, BR_MRP_PORT_STATE_BLOCKED);
 
 	if (mrp_is_port_up(mrp->i_port)) {
 		if (mrp->in_mode == MRP_IN_MODE_RC)
@@ -304,11 +339,11 @@ static int mrp_set_mic_role(struct mrp *mrp)
 
 	mrp_set_mic_state(mrp, MRP_MIC_STATE_AC_STAT1);
 
-	err = mrp_netlink_set_in_role(mrp, BR_MRP_IN_ROLE_MIC);
+	err = mrp_set_in_role(mrp, BR_MRP_IN_ROLE_MIC);
 	if (err)
 		return err;
 
-	mrp_port_netlink_set_state(mrp->i_port, BR_MRP_PORT_STATE_BLOCKED);
+	mrp_port_set_state(mrp->i_port, BR_MRP_PORT_STATE_BLOCKED);
 
 	if (mrp_is_port_up(mrp->i_port)) {
 		if (mrp->in_mode == MRP_IN_MODE_RC)
@@ -527,7 +562,7 @@ void mrp_ring_topo_req(struct mrp *mrp, uint32_t time)
 	mrp_ring_topo_send(mrp, time * mrp->ring_topo_conf_max);
 
 	if (!time) {
-		mrp_netlink_flush(mrp);
+		ifdriver_flush(mrp);
 	} else {
 		uint32_t delay = mrp->ring_topo_conf_interval;
 
@@ -818,7 +853,7 @@ void mrp_in_topo_req(struct mrp *mrp, uint32_t time)
 	mrp_in_topo_send(mrp, time * mrp->in_topo_conf_max);
 
 	if (!time) {
-		mrp_netlink_flush(mrp);
+		ifdriver_flush(mrp);
 	} else {
 		uint32_t delay = mrp->in_topo_conf_interval;
 
@@ -947,7 +982,7 @@ static void mrp_mrm_recv_ring_test(struct mrp *mrp)
 		mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RC);
 		break;
 	case MRP_MRM_STATE_CHK_RO:
-		mrp_port_netlink_set_state(mrp->s_port,
+		mrp_port_set_state(mrp->s_port,
 					   BR_MRP_PORT_STATE_BLOCKED);
 
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max - 1;
@@ -1077,7 +1112,7 @@ static void mrp_mrc_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	case MRP_MRC_STATE_PT:
 		mrp->ring_link_curr_max = mrp->ring_link_conf_max;
 		mrp_ring_link_up_stop(mrp);
-		mrp_port_netlink_set_state(mrp->s_port,
+		mrp_port_set_state(mrp->s_port,
 					   BR_MRP_PORT_STATE_FORWARDING);
 		mrp_clear_fdb_start(mrp, ntohs(hdr->interval) * 1000);
 		mrp_set_mrc_state(mrp, MRP_MRC_STATE_PT_IDLE);
@@ -1167,7 +1202,7 @@ static void mrp_recv_ring_link(struct mrp_port *p, unsigned char *buf)
 		}
 
 		if (type == BR_MRP_TLV_HEADER_RING_LINK_UP && !mrp->blocked) {
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp->ring_test_curr_max = mrp->ring_test_conf_max - 1;
 			mrp->ring_test_curr = 0;
@@ -1200,7 +1235,7 @@ static void mrp_recv_ring_link(struct mrp_port *p, unsigned char *buf)
 
 		if (type == BR_MRP_TLV_HEADER_RING_LINK_DOWN &&
 		    mrp->react_on_link_change) {
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp->ring_transitions++;
 			mrp_ring_topo_req(mrp, 0);
@@ -1261,7 +1296,7 @@ static void mrp_recv_nack(struct mrp_port *p, unsigned char *buf)
 	}
 
 	if (mrp->mrm_state == MRP_MRM_STATE_CHK_RC)
-		mrp_port_netlink_set_state(mrp->s_port,
+		mrp_port_set_state(mrp->s_port,
 					   BR_MRP_PORT_STATE_FORWARDING);
 
 	mrp_ring_topo_stop(mrp);
@@ -1271,15 +1306,15 @@ static void mrp_recv_nack(struct mrp_port *p, unsigned char *buf)
 	switch (mrp->mrm_state) {
 	case MRP_MRM_STATE_PRM_UP:
 		mrp_set_mrc_state(mrp, MRP_MRC_STATE_DE_IDLE);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
+		mrp_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
 		break;
 	case MRP_MRM_STATE_CHK_RO:
 		mrp_set_mrc_state(mrp, MRP_MRC_STATE_PT_IDLE);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
+		mrp_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
 		break;
 	case MRP_MRM_STATE_CHK_RC:
 		mrp_set_mrc_state(mrp, MRP_MRC_STATE_PT_IDLE);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
+		mrp_set_ring_role(mrp, BR_MRP_RING_ROLE_MRC);
 		break;
 	default:
 		break;
@@ -1338,7 +1373,7 @@ static void mrp_recv_option(struct mrp_port *p, unsigned char *buf)
 static void mrp_mim_recv_in_test(struct mrp *mrp)
 {
 	if (mrp->mim_state == MRP_MIM_STATE_AC_STAT1) {
-		mrp_port_netlink_set_state(mrp->i_port,
+		mrp_port_set_state(mrp->i_port,
 					   BR_MRP_PORT_STATE_BLOCKED);
 
 		mrp->in_test_curr_max = mrp->in_test_conf_max - 1;
@@ -1350,7 +1385,7 @@ static void mrp_mim_recv_in_test(struct mrp *mrp)
 	}
 
 	if (mrp->mim_state == MRP_MIM_STATE_CHK_IO) {
-		mrp_port_netlink_set_state(mrp->i_port,
+		mrp_port_set_state(mrp->i_port,
 					   BR_MRP_PORT_STATE_BLOCKED);
 
 		mrp->in_test_curr_max = mrp->in_test_conf_max - 1;
@@ -1422,7 +1457,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 		case MRP_MIC_STATE_PT:
 			mrp->in_link_curr_max = mrp->in_link_conf_max;
 			mrp_in_link_up_stop(mrp);
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_set_mic_state(mrp, MRP_MIC_STATE_IP_IDLE);
 			break;
@@ -1472,7 +1507,7 @@ static void mrp_recv_in_link(struct mrp_port *p, unsigned char *buf)
 		}
 		if (ntohs(hdr->id) == mrp->in_id &&
 		    type == BR_MRP_TLV_HEADER_IN_LINK_DOWN) {
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_in_topo_req(mrp, mrp->in_topo_conf_interval);
 			mrp_set_mim_state(mrp, MRP_MIM_STATE_CHK_IO);
@@ -1724,7 +1759,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 	switch (mrp->mrm_state) {
 	case MRP_MRM_STATE_AC_STAT1:
 		if (up && p == mrp->p_port) {
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
 			mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
@@ -1732,7 +1767,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 		if (up && p != mrp->p_port) {
 			mrp->s_port = mrp->p_port;
 			mrp->p_port = p;
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
 			mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
@@ -1741,7 +1776,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 	case MRP_MRM_STATE_PRM_UP:
 		if (!up && p == mrp->p_port) {
 			mrp_ring_test_stop(mrp);
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_set_mrm_state(mrp, MRP_MRM_STATE_AC_STAT1);
 		}
@@ -1757,7 +1792,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 		if (!up && p == mrp->p_port) {
 			mrp->p_port = mrp->s_port;
 			mrp->s_port = p;
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
 			mrp_ring_topo_req(mrp, topo_interval);
@@ -1765,7 +1800,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 			break;
 		}
 		if (!up && p != mrp->p_port) {
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
 		}
@@ -1774,9 +1809,9 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 		if (!up && p == mrp->p_port) {
 			mrp->p_port = mrp->s_port;
 			mrp->s_port = p;
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
 			mrp_ring_topo_req(mrp, topo_interval);
@@ -1809,14 +1844,14 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 	switch (mrp->mrc_state) {
 	case MRP_MRC_STATE_AC_STAT1:
 		if (up && p == mrp->p_port) {
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_set_mrc_state(mrp, MRP_MRC_STATE_DE_IDLE);
 		}
 		if (up && p != mrp->p_port) {
 			mrp->s_port = mrp->p_port;
 			mrp->p_port = p;
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
 			mrp_set_mrc_state(mrp, MRP_MRC_STATE_DE_IDLE);
 		}
@@ -1832,7 +1867,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 			mrp_set_mrc_state(mrp, MRP_MRC_STATE_PT);
 		}
 		if (!up && p == mrp->p_port) {
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_set_mrc_state(mrp, MRP_MRC_STATE_AC_STAT1);
 		}
@@ -1841,7 +1876,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 		if (!up && p != mrp->p_port) {
 			mrp->ring_link_curr_max = mrp->ring_link_conf_max;
 			mrp_ring_link_up_stop(mrp);
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_ring_link_down_start(mrp,
 						 mrp->ring_link_conf_interval);
@@ -1856,9 +1891,9 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 			mrp_ring_link_up_stop(mrp);
 			mrp->p_port = mrp->s_port;
 			mrp->s_port = p;
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_FORWARDING);
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_ring_link_down_start(mrp,
 						 mrp->ring_link_conf_interval);
@@ -1881,7 +1916,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 		}
 		if (!up && p == mrp->p_port) {
 			mrp->ring_link_curr_max = mrp->ring_link_conf_max;
-			mrp_port_netlink_set_state(mrp->p_port,
+			mrp_port_set_state(mrp->p_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_ring_link_down_stop(mrp);
 			mrp_set_mrc_state(mrp, MRP_MRC_STATE_AC_STAT1);
@@ -1890,7 +1925,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 	case MRP_MRC_STATE_PT_IDLE:
 		if (!up && p != mrp->p_port) {
 			mrp->ring_link_curr_max = mrp->ring_link_conf_max;
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_ring_link_down_start(mrp,
 						 mrp->ring_link_conf_interval);
@@ -1903,7 +1938,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 			mrp->ring_link_curr_max = mrp->ring_link_conf_max;
 			mrp->p_port = mrp->s_port;
 			mrp->s_port = p;
-			mrp_port_netlink_set_state(mrp->s_port,
+			mrp_port_set_state(mrp->s_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_ring_link_down_start(mrp,
 						 mrp->ring_link_conf_interval);
@@ -1931,7 +1966,7 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 	if (up && mrp->in_mode == MRP_IN_MODE_RC) {
 		switch (mrp->mim_state) {
 		case MRP_MIM_STATE_AC_STAT1:
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp->in_test_curr_max = mrp->in_test_conf_max - 1;
 			mrp->in_test_curr = 0;
@@ -1954,7 +1989,7 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 			break;
 		case MRP_MIM_STATE_CHK_IO: /* fallthrough */
 		case MRP_MIM_STATE_CHK_IC:
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_in_topo_req(mrp, mrp->in_topo_conf_interval);
 			mrp_in_test_req(mrp, mrp->in_test_conf_interval);
@@ -1967,7 +2002,7 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 		switch (mrp->mim_state) {
 		case MRP_MIM_STATE_AC_STAT1:
 			mrp->in_link_status_curr_max = mrp->in_link_status_conf_max;
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_in_link_status_req(mrp,
 					       mrp->in_link_status_conf_interval);
@@ -1988,13 +2023,13 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 			/* Ignore */
 			break;
 		case MRP_MIM_STATE_CHK_IO:
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_in_link_status_stop(mrp);
 			mrp_set_mim_state(mrp, MRP_MIM_STATE_AC_STAT1);
 			break;
 		case MRP_MIM_STATE_CHK_IC:
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_set_mim_state(mrp, MRP_MIM_STATE_AC_STAT1);
 			break;
@@ -2041,7 +2076,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 		case MRP_MIC_STATE_PT:
 			mrp->in_link_curr_max = mrp->in_link_conf_max;
 			mrp_in_link_up_stop(mrp);
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_in_link_down_start(mrp, mrp->in_link_conf_interval);
 			mrp_in_link_req(mrp, up, mrp->in_link_conf_max *
@@ -2050,7 +2085,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 			break;
 		case MRP_MIC_STATE_IP_IDLE:
 			mrp->in_link_curr_max = mrp->in_link_conf_max;
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_in_link_down_start(mrp, mrp->in_link_conf_interval);
 			mrp_in_link_req(mrp, up, mrp->in_link_conf_max *
@@ -2087,7 +2122,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 		case MRP_MIC_STATE_IP_IDLE:
 			mrp->in_link_curr_max = mrp->in_link_conf_max;
 			mrp_in_link_up_stop(mrp);
-			mrp_port_netlink_set_state(mrp->i_port,
+			mrp_port_set_state(mrp->i_port,
 						   BR_MRP_PORT_STATE_BLOCKED);
 			mrp_in_link_down_start(mrp,
 					       mrp->in_link_conf_interval);
