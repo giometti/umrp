@@ -11,6 +11,7 @@
 #include "state_machine.h"
 #include "server_cmds.h"
 #include "utils.h"
+#include "netlink.h"
 #include "packet.h"
 #include "pdu.h"
 #include "cfm_netlink.h"

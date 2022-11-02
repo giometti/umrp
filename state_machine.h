@@ -208,15 +208,5 @@ void mrp_in_link_status_stop(struct mrp *mrp);
 void mrp_cfm_ccm_start(struct mrp *mrp, uint32_t interval);
 void mrp_cfm_ccm_stop(struct mrp *mrp);
 
-/* netlink.c */
-int mrp_port_netlink_set_state(struct mrp_port *p,
-			       enum br_mrp_port_state_type state);
-
-int mrp_netlink_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role);
-
-int mrp_netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role);
-
-int mrp_netlink_flush(struct mrp *mrp);
-
 #endif /* STATE_MACHINE_H */
 

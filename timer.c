@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include "netlink.h"
 #include "state_machine.h"
 #include "cfm_netlink.h"
 #include "print.h"

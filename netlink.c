@@ -18,6 +18,10 @@
 #include "libnetlink.h"
 #include "print.h"
 
+/*
+ * Private data & functions
+ */
+
 static struct rtnl_handle rth = { .fd = -1 };
 
 struct request {
@@ -81,20 +85,9 @@ static int mrp_nl_terminate(struct request *req, struct rtattr *afspec,
 	return 0;
 }
 
-int mrp_netlink_init(void)
-{
-	if (rtnl_open(&rth, 0) < 0) {
-		pr_err("Cannot open rtnetlink");
-		return EXIT_FAILURE;
-	}
-
-	return 0;
-}
-
-void mrp_netlink_uninit(void)
-{
-	rtnl_close(&rth);
-}
+/*
+ * Public data & functions
+ */
 
 int mrp_port_netlink_set_state(struct mrp_port *p,
 			       enum br_mrp_port_state_type state)
@@ -187,4 +180,21 @@ int mrp_netlink_flush(struct mrp *mrp)
 		return -1;
 
 	return 0;
+}
+
+/* INIT & UNINIT functions */
+
+int mrp_netlink_init(void)
+{
+	if (rtnl_open(&rth, 0) < 0) {
+		pr_err("Cannot open rtnetlink");
+		return EXIT_FAILURE;
+	}
+
+	return 0;
+}
+
+void mrp_netlink_uninit(void)
+{
+	rtnl_close(&rth);
 }
