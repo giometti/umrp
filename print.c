@@ -9,17 +9,11 @@
 
 #include "print.h"
 
-static int verbose = 0;
 static int print_level = LOG_INFO;
 
 void print_set_level(int level)
 {
 	print_level = level;
-}
-
-void print_set_verbose(int value)
-{
-	verbose = value;
 }
 
 void print(int level, char const *format, ...)
@@ -38,11 +32,9 @@ void print(int level, char const *format, ...)
 	vsnprintf(buf, sizeof(buf), format, ap);
 	va_end(ap);
 
-	if (verbose) {
-		f = level >= LOG_NOTICE ? stdout : stderr;
-		fprintf(f, "MRP[%lld.%03ld]: %s\n",
+	f = level >= LOG_NOTICE ? stdout : stderr;
+	fprintf(f, "MRP[%lld.%03ld]: %s\n",
 			(long long)ts.tv_sec, ts.tv_nsec / 1000000,
 			buf);
-		fflush(f);
-	}
+	fflush(f);
 }

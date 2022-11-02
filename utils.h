@@ -16,6 +16,7 @@
 #define LINUX_MRP_NETLINK "br_mrp_netlink"
 
 #define __alias(f)		__attribute__ ((alias(f)))
+#define __printf(i, j)		__attribute__ ((format (printf, i, j)))
 
 #define likely(x)               __builtin_expect(!!(x), 1)
 #define unlikely(x)             __builtin_expect(!!(x), 0)

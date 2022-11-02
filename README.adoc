@@ -69,7 +69,7 @@ By default the mrp_server doesn't display any log message. It is possible to
 start the server using this command to display all the log to the console:
 
 ```bash
-mrp_server -m -l 7 &
+mrp_server -l 7 &
 ```
 
 If the kernel doesn't support MRP, then the server will print an error message

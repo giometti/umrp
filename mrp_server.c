@@ -19,7 +19,6 @@ volatile bool quit = false;
 static void usage(void)
 {
 	printf("Usage::\n"
-	       " -m        print messages to stdout\n"
 	       " -h        print this message and exit\n"
 	       " -l [num]  set the logging level\n");
 }
@@ -51,11 +50,8 @@ int main(int argc, char *argv[])
 {
 	int c;
 
-	while ((c = getopt(argc, argv, "mhl:")) != -1) {
+	while ((c = getopt(argc, argv, "hl:")) != -1) {
 		switch (c) {
-		case 'm':
-			print_set_verbose(1);
-			break;
 		case 'l':
 			print_set_level(atoi(optarg));
 			break;

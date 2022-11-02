@@ -6,11 +6,12 @@
 
 #include <syslog.h>
 
+#include "utils.h"
+
 void print_set_level(int level);
-void print_set_verbose(int value);
 
 #ifdef __GNUC__
-__attribute__ ((format (printf, 2, 3)))
+__printf(2, 3)
 #endif
 void print(int level, char const *format, ...);
 
