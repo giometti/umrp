@@ -2321,6 +2321,8 @@ static int mrp_port_init(uint32_t p_ifindex, struct mrp *mrp,
 
 	port->mrp = mrp;
 	port->ifindex = p_ifindex;
+	if_indextoname(port->ifindex, port->ifname);
+	BUG_ON(!port->ifname);
 	port->role = role;
 	if_get_mac(port->ifindex, port->macaddr);
 
@@ -2539,6 +2541,8 @@ int mrp_add(uint32_t br_ifindex, uint32_t ring_nr, uint32_t pport,
 	pthread_mutex_lock(&mrp->lock);
 
 	mrp->ifindex = br_ifindex;
+	if_indextoname(mrp->ifindex, mrp->ifname);
+	BUG_ON(!mrp->ifname);
 	mrp->prio = prio;
 	mrp->ring_prio = prio;
 	mrp_update_recovery(mrp, ring_recv, in_recv);

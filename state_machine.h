@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <linux/if_packet.h>
 #include <linux/if_ether.h>
+#include <net/if.h>
 #include <linux/mrp_bridge.h>
 
 #include <pthread.h>
@@ -24,6 +25,7 @@ struct mrp_port {
 	enum br_mrp_port_state_type	state;
 	enum br_mrp_port_role_type	role;
 	uint32_t			ifindex;
+	char				ifname[IF_NAMESIZE];
 	uint8_t				macaddr[ETH_ALEN];
 	uint8_t				operstate;
 };
@@ -35,8 +37,9 @@ struct mrp {
 	/* lock for each MRP instance */
 	pthread_mutex_t			lock;
 
-	/* ifindex of the bridge */
+	/* ifindex and ifname of the bridge */
 	uint32_t			ifindex;
+	char				ifname[IF_NAMESIZE];
 	/* mac address of the bridge */
 	uint8_t				macaddr[ETH_ALEN];
 	struct mrp_port			*p_port;
