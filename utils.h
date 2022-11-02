@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Rodolfo Giometti <giometti@enneenne.com>
 // Copyright (c) 2020 Microchip Technology Inc. and its subsidiaries.
 // SPDX-License-Identifier: (GPL-2.0)
 
@@ -13,6 +14,33 @@
 #include <stdbool.h>
 
 #define LINUX_MRP_NETLINK "br_mrp_netlink"
+
+#define likely(x)               __builtin_expect(!!(x), 1)
+#define unlikely(x)             __builtin_expect(!!(x), 0)
+#define stringify(s)            __stringify(s)
+#define __stringify(s)          #s
+
+#define __CHECK(condition, do_exit)                                     \
+        do {                                                            \
+                pr_err("fatal error in %s(): %s",                       \
+                        __func__, stringify(condition));                \
+                /* stack_trace(); */                                    \
+                if (do_exit)                                            \
+                        exit(EXIT_FAILURE);                             \
+        } while (0)
+#define __CHECK_ON(condition, do_exit)                                  \
+        do {                                                            \
+                if (unlikely(condition))                                \
+                        __CHECK(condition, do_exit);                    \
+        } while(0)
+#define BUG()                                                           \
+        __CHECK(offending line is __LINE__, 1)
+#define BUG_ON(condition)                                               \
+        __CHECK_ON(condition, 1)
+#define WARN()                                                          \
+        __CHECK(offending line is __LINE__, 0)
+#define WARN_ON(condition)                                              \
+        __CHECK_ON(condition, 0)
 
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
