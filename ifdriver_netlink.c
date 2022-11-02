@@ -17,7 +17,6 @@
 #include "state_machine.h"
 #include "utils.h"
 #include "libnetlink.h"
-#include "print.h"
 
 /*
  * Private data & functions

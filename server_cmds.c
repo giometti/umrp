@@ -23,7 +23,6 @@
 #include "list.h"
 #include "ifdriver.h"
 #include "cfm_netlink.h"
-#include "print.h"
 
 static struct rtnl_handle rth;
 static ev_io netlink_watcher;

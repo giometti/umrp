@@ -5,8 +5,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <errno.h>
 #include <string.h>
-
+#include <time.h>
 #include <netinet/in.h>
 #include <linux/if_bridge.h>
 #include <linux/cfm_bridge.h>
@@ -14,6 +15,7 @@
 #include <stdbool.h>
 
 #define LINUX_MRP_NETLINK "br_mrp_netlink"
+#define NAME		  program_invocation_short_name
 
 #define __alias(f)		__attribute__ ((alias(f)))
 #define __printf(i, j)		__attribute__ ((format (printf, i, j)))
@@ -22,6 +24,44 @@
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 #define stringify(s)            __stringify(s)
 #define __stringify(s)          #s
+
+extern int __debug_level;
+#define __message(stream, layout, fmt, args...)                         \
+        do {                                                            \
+                struct timespec t;                                      \
+                clock_gettime(CLOCK_MONOTONIC, &t);			\
+                switch (layout) {                                       \
+                case 0:                                                 \
+                        fprintf(stream, "[%s] " fmt "\n", NAME, ## args);\
+                        break;                                          \
+                case 1:                                                 \
+                        if (unlikely(__debug_level >= layout)) {        \
+                                fprintf(stream, "%ld.%09ld ",		\
+                                                t.tv_sec, t.tv_nsec);   \
+                                fprintf(stream, "[%s] %s: " fmt "\n",   \
+                                        NAME, __func__, ## args);       \
+                        }                                               \
+                        break;                                          \
+                default:                                                \
+                        if (unlikely(__debug_level >= layout)) {        \
+                                fprintf(stream, "%ld.%09ld ",		\
+                                                t.tv_sec, t.tv_nsec);   \
+                                fprintf(stream, "[%s](%s@%d) %s: " fmt "\n",\
+                                        NAME, __FILE__, __LINE__, __func__, ## args);\
+                        }                                               \
+                }                                                       \
+        } while (0)
+
+#define pr_err(fmt, args...)						\
+                __message(stderr, 0, fmt, ## args)
+#define pr_warn(fmt, args...)						\
+                __message(stderr, 0, fmt , ## args)
+#define pr_info(fmt, args...)						\
+                __message(stdout, 0, fmt, ## args)
+#define pr_debug(fmt, args...)						\
+                __message(stderr, 1, fmt, ## args)
+#define pr_vdbg(fmt, args...)						\
+                __message(stderr, 2, fmt, ## args)
 
 #define __CHECK(condition, do_exit)                                     \
         do {                                                            \

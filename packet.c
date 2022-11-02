@@ -18,7 +18,6 @@
 
 #include "state_machine.h"
 #include "utils.h"
-#include "print.h"
 
 static ev_io packet_watcher;
 static int fd;

@@ -15,7 +15,6 @@
 #include "packet.h"
 #include "pdu.h"
 #include "cfm_netlink.h"
-#include "print.h"
 
 static LIST_HEAD(mrp_instances);
 

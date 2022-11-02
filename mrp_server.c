@@ -12,15 +12,15 @@
 #include "server_socket.h"
 #include "utils.h"
 #include "packet.h"
-#include "print.h"
 
+int __debug_level;
 volatile bool quit = false;
 
 static void usage(void)
 {
 	printf("Usage::\n"
 	       " -h        print this message and exit\n"
-	       " -l [num]  set the logging level\n");
+	       " -d        increase debugging level\n");
 }
 
 static void handle_signal(int sig)
@@ -50,10 +50,10 @@ int main(int argc, char *argv[])
 {
 	int c;
 
-	while ((c = getopt(argc, argv, "hl:")) != -1) {
+	while ((c = getopt(argc, argv, "hd")) != -1) {
 		switch (c) {
-		case 'l':
-			print_set_level(atoi(optarg));
+		case 'd':
+			__debug_level++;
 			break;
 		case 'h':
 			usage();

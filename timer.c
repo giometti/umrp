@@ -8,7 +8,6 @@
 #include "ifdriver.h"
 #include "state_machine.h"
 #include "cfm_netlink.h"
-#include "print.h"
 
 static void mrp_clear_fdb_expired(struct ev_loop *loop,
 				  ev_timer *w, int revents)
