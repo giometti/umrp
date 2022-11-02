@@ -15,7 +15,7 @@ __printf(2, 3)
 #endif
 void print(int level, char const *format, ...);
 
-#define pr_alert(x...)   print(LOG_ALERT, x)
+#define pr_warn(x...)    print(LOG_WARNING, x)
 #define pr_err(x...)     print(LOG_ERR, x)
 #define pr_debug(x...)   print(LOG_DEBUG, x)
 

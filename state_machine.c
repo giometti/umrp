@@ -1053,7 +1053,7 @@ static void mrp_recv_ring_test(struct mrp_port *p, unsigned char *buf)
 	 */
 	if (!ether_addr_equal(hdr->sa, mrp->macaddr)) {
 		if (!mrp->mra_support) {
-			pr_alert("Received unexpected MRP Test frame");
+			pr_warn("Received unexpected MRP Test frame");
 			return;
 		}
 
