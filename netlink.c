@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Rodolfo Giometti <giometti@enneenne.com>
 // Copyright (c) 2020 Microchip Technology Inc. and its subsidiaries.
 // SPDX-License-Identifier: (GPL-2.0)
 
@@ -18,16 +19,6 @@
 #include "print.h"
 
 static struct rtnl_handle rth = { .fd = -1 };
-
-static LIST_HEAD(mrp_rings);
-
-struct mrp_ring {
-	struct list_head list;
-	uint32_t ifindex;
-	uint32_t ring_id;
-	uint32_t p_ifindex;
-	uint32_t s_ifindex;
-};
 
 struct request {
 	struct nlmsghdr		n;
@@ -90,91 +81,6 @@ static int mrp_nl_terminate(struct request *req, struct rtattr *afspec,
 	return 0;
 }
 
-static int get_bridges(struct nlmsghdr *n, void *arg)
-{
-	struct rtattr *aftb[IFLA_BRIDGE_MAX + 1];
-	struct rtattr *mrp_infotb[IFLA_BRIDGE_MRP_INFO_MAX + 1];
-	struct ifinfomsg *ifi = NLMSG_DATA(n);
-	struct rtattr *tb[IFLA_MAX + 1];
-	struct mrp_ring *mrp_ring;
-	int len = n->nlmsg_len;
-	struct rtattr *i, *list;
-	int rem;
-
-	len -= NLMSG_LENGTH(sizeof(*ifi));
-	if (len < 0) {
-		pr_err("Message too short!");
-		return -1;
-	}
-
-	if (ifi->ifi_family != AF_BRIDGE)
-		return 0;
-
-	parse_rtattr_flags(tb, IFLA_MAX, IFLA_RTA(ifi), len, NLA_F_NESTED);
-
-	if (!tb[IFLA_AF_SPEC])
-		return 0;
-
-	parse_rtattr_nested(aftb, IFLA_BRIDGE_MAX, tb[IFLA_AF_SPEC]);
-	if (!aftb[IFLA_BRIDGE_MRP])
-		return 0;
-
-	list = aftb[IFLA_BRIDGE_MRP];
-	rem = RTA_PAYLOAD(list);
-	for (i = RTA_DATA(list); RTA_OK(i, rem); i = RTA_NEXT(i, rem)) {
-		if (i->rta_type != IFLA_BRIDGE_MRP_INFO)
-			continue;
-
-		parse_rtattr_nested(mrp_infotb, IFLA_BRIDGE_MRP_INFO_MAX, i);
-		if (!mrp_infotb[IFLA_BRIDGE_MRP_INFO_RING_ID])
-			return 0;
-
-		mrp_ring = malloc(sizeof(*mrp_ring));
-		memset(mrp_ring, 0x0, sizeof(*mrp_ring));
-		mrp_ring->ifindex = rta_getattr_u32(tb[IFLA_MASTER]);
-		mrp_ring->ring_id = rta_getattr_u32(mrp_infotb[IFLA_BRIDGE_MRP_INFO_RING_ID]);
-		mrp_ring->p_ifindex = rta_getattr_u32(mrp_infotb[IFLA_BRIDGE_MRP_INFO_P_IFINDEX]);
-		mrp_ring->s_ifindex = rta_getattr_u32(mrp_infotb[IFLA_BRIDGE_MRP_INFO_S_IFINDEX]);
-		list_add_tail(&mrp_ring->list, &mrp_rings);
-	}
-
-	return 0;
-}
-
-static int mrp_netlink_clear(void)
-{
-	struct mrp_ring *mrp_ring;
-	int err;
-
-	err = rtnl_linkdump_req_filter(&rth, PF_BRIDGE, RTEXT_FILTER_MRP);
-	if (err < 0) {
-		pr_err("Cannot rtnl_linkdump_req_filter");
-		return err;
-	}
-
-	rtnl_dump_filter(&rth, get_bridges, NULL);
-
-	list_for_each_entry(mrp_ring, &mrp_rings, list) {
-		struct rtattr *afspec, *afmrp, *af_submrp;
-		struct request req = { 0 };
-
-		mrp_nl_bridge_prepare(mrp_ring->ifindex, RTM_DELLINK, &req,
-				      &afspec, &afmrp, &af_submrp,
-				      IFLA_BRIDGE_MRP_INSTANCE);
-
-		addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_RING_ID,
-			  mrp_ring->ring_id);
-		addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_P_IFINDEX,
-			  mrp_ring->p_ifindex);
-		addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_S_IFINDEX,
-			  mrp_ring->s_ifindex);
-
-		mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-	}
-
-	return 0;
-}
-
 int mrp_netlink_init(void)
 {
 	if (rtnl_open(&rth, 0) < 0) {
@@ -182,51 +88,12 @@ int mrp_netlink_init(void)
 		return EXIT_FAILURE;
 	}
 
-	mrp_netlink_clear();
 	return 0;
 }
 
 void mrp_netlink_uninit(void)
 {
 	rtnl_close(&rth);
-}
-
-int mrp_netlink_add(struct mrp *mrp, struct mrp_port *p, struct mrp_port *s,
-		    uint16_t prio)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec,
-			      &afmrp, &af_submrp, IFLA_BRIDGE_MRP_INSTANCE);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_RING_ID,
-		  mrp->ring_nr);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_P_IFINDEX,
-		  p->ifindex);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_S_IFINDEX,
-		  s->ifindex);
-	addattr16(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_PRIO, prio);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-}
-
-int mrp_netlink_del(struct mrp *mrp)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	mrp_nl_bridge_prepare(mrp->ifindex, RTM_DELLINK, &req, &afspec, &afmrp,
-			      &af_submrp, IFLA_BRIDGE_MRP_INSTANCE);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_RING_ID,
-		  mrp->ring_nr);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_P_IFINDEX,
-		  mrp->p_port ? mrp->p_port->ifindex : 0);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_INSTANCE_S_IFINDEX,
-		  mrp->s_port ? mrp->s_port->ifindex : 0);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
 
 int mrp_port_netlink_set_state(struct mrp_port *p,
@@ -241,39 +108,6 @@ int mrp_port_netlink_set_state(struct mrp_port *p,
 			    &af_submrp, IFLA_BRIDGE_MRP_PORT_STATE);
 
 	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_PORT_STATE_STATE, state);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-}
-
-int mrp_port_netlink_set_role(struct mrp_port *p,
-			      enum br_mrp_port_role_type role)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	p->role = role;
-
-	mrp_nl_port_prepare(p, RTM_SETLINK, &req, &afspec, &afmrp,
-			    &af_submrp, IFLA_BRIDGE_MRP_PORT_ROLE);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_PORT_ROLE_ROLE, role);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-}
-
-int mrp_netlink_set_ring_state(struct mrp *mrp,
-			       enum br_mrp_ring_state_type state)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec, &afmrp,
-			      &af_submrp, IFLA_BRIDGE_MRP_RING_STATE);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_RING_STATE_RING_ID,
-		  mrp->ring_nr);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_RING_STATE_STATE,
-		  state);
 
 	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
@@ -299,46 +133,6 @@ int mrp_netlink_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role)
 	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
 
-int mrp_netlink_send_ring_test(struct mrp *mrp, uint32_t interval, uint32_t max,
-			       uint32_t period)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec, &afmrp,
-			      &af_submrp, IFLA_BRIDGE_MRP_START_TEST);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_TEST_RING_ID,
-		  mrp->ring_nr);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_TEST_INTERVAL,
-		  interval);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_TEST_MAX_MISS,
-		  max);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_TEST_PERIOD,
-		  period);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_TEST_MONITOR,
-		  mrp->test_monitor);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-}
-
-int mrp_netlink_set_in_state(struct mrp *mrp,
-			     enum br_mrp_in_state_type state)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec, &afmrp,
-			      &af_submrp, IFLA_BRIDGE_MRP_IN_STATE);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_IN_STATE_IN_ID,
-		  mrp->in_id);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_IN_STATE_STATE,
-		  state);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-}
-
 int mrp_netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
 {
 	struct rtattr *afspec, *afmrp, *af_submrp;
@@ -357,27 +151,6 @@ int mrp_netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
 		  mrp->i_port->ifindex);
 	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_IN_ROLE_ROLE,
 		  role);
-
-	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
-}
-
-int mrp_netlink_send_in_test(struct mrp *mrp, uint32_t interval, uint32_t max,
-			      uint32_t period)
-{
-	struct rtattr *afspec, *afmrp, *af_submrp;
-	struct request req = { 0 };
-
-	mrp_nl_bridge_prepare(mrp->ifindex, RTM_SETLINK, &req, &afspec, &afmrp,
-			      &af_submrp, IFLA_BRIDGE_MRP_START_IN_TEST);
-
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_IN_TEST_IN_ID,
-		  mrp->in_id);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_IN_TEST_INTERVAL,
-		  interval);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_IN_TEST_MAX_MISS,
-		  max);
-	addattr32(&req.n, sizeof(req), IFLA_BRIDGE_MRP_START_IN_TEST_PERIOD,
-		  period);
 
 	return mrp_nl_terminate(&req, afspec, afmrp, af_submrp);
 }
@@ -415,4 +188,3 @@ int mrp_netlink_flush(struct mrp *mrp)
 
 	return 0;
 }
-

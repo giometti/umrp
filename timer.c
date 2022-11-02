@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Rodolfo Giometti <giometti@enneenne.com>
 // Copyright (c) 2020 Microchip Technology Inc. and its subsidiaries.
 // SPDX-License-Identifier: (GPL-2.0)
 
@@ -7,81 +8,6 @@
 #include "state_machine.h"
 #include "cfm_netlink.h"
 #include "print.h"
-
-static bool mrp_mrc_ring_open(struct mrp *mrp)
-{
-	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM)
-		return false;
-
-	mrp_set_mrm_init(mrp);
-
-	switch (mrp->mrc_state) {
-	case MRP_MRC_STATE_DE_IDLE:
-		mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
-		break;
-	case MRP_MRC_STATE_PT:
-		mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RC);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
-		break;
-	case MRP_MRC_STATE_DE:
-		mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
-		break;
-	case MRP_MRC_STATE_PT_IDLE:
-		mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RO);
-		mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
-	default:
-		break;
-	}
-
-	mrp->test_monitor = false;
-	mrp_ring_test_req(mrp, mrp->ring_test_conf_short);
-
-	return true;
-}
-
-void mrp_ring_open(struct mrp *mrp)
-{
-	if (mrp->mra_support)
-		if (mrp_mrc_ring_open(mrp))
-			return;
-
-	if (mrp->mrm_state != MRP_MRM_STATE_CHK_RC) {
-		mrp->add_test = false;
-		mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
-		return;
-	}
-
-	mrp_port_netlink_set_state(mrp->s_port, BR_MRP_PORT_STATE_FORWARDING);
-
-	mrp->ring_test_curr_max = mrp->ring_test_conf_max - 1;
-	mrp->ring_test_curr = 0;
-
-	mrp->add_test = false;
-
-	if (!mrp->no_tc)
-		mrp_ring_topo_req(mrp, mrp->ring_topo_conf_interval);
-
-	mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
-
-	mrp->ring_transitions++;
-	mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RO);
-}
-
-void mrp_in_open(struct mrp *mrp)
-{
-	mrp_port_netlink_set_state(mrp->i_port, BR_MRP_PORT_STATE_FORWARDING);
-
-	mrp->in_test_curr_max = mrp->in_test_conf_max - 1;
-	mrp->in_test_curr = 0;
-
-	mrp_in_topo_req(mrp, mrp->in_topo_conf_interval);
-	mrp_in_test_req(mrp, mrp->in_test_conf_interval);
-
-	mrp->in_transitions++;
-	mrp_set_mim_state(mrp, MRP_MIM_STATE_CHK_IO);
-}
 
 static void mrp_clear_fdb_expired(struct ev_loop *loop,
 				  ev_timer *w, int revents)
@@ -93,6 +19,37 @@ static void mrp_clear_fdb_expired(struct ev_loop *loop,
 	mrp_clear_fdb_stop(mrp);
 }
 
+static void mrp_mrc_ring_test_expired(struct mrp *mrp)
+{
+	if (mrp->ring_test_curr <= mrp->ring_test_curr_max) {
+		mrp->ring_test_curr++;
+		mrp_ring_test_req(mrp, mrp->ring_test_conf_short);
+	} else {
+		mrp_ring_test_req(mrp, mrp->ring_test_conf_short);
+		mrp_set_mrm_init(mrp);
+
+		switch (mrp->mrc_state) {
+		case MRP_MRC_STATE_DE_IDLE:
+			mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
+			mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
+			break;
+		case MRP_MRC_STATE_PT:
+	                mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RC);
+			mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
+			break;
+		case MRP_MRC_STATE_DE:
+			mrp_set_mrm_state(mrp, MRP_MRM_STATE_PRM_UP);
+			mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
+			break;
+		case MRP_MRC_STATE_PT_IDLE:
+			mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RO);
+			mrp_netlink_set_ring_role(mrp, BR_MRP_RING_ROLE_MRM);
+		default:
+			break;
+		}
+	}
+}
+
 static void mrp_ring_test_expired(struct ev_loop *loop,
 				  ev_timer *w, int revents)
 {
@@ -100,29 +57,43 @@ static void mrp_ring_test_expired(struct ev_loop *loop,
 
 	pthread_mutex_lock(&mrp->lock);
 
-	if (mrp->mrm_state == MRP_MRM_STATE_AC_STAT1)
-		goto out;
+	if (mrp->mra_support && mrp->ring_role == BR_MRP_RING_ROLE_MRC) {
+		mrp_mrc_ring_test_expired(mrp);
+		goto unlock;
+	}
 
-	mrp->add_test = false;
+        switch (mrp->mrm_state) {
+        case MRP_MRM_STATE_AC_STAT1:
+                /* Ignore */
+                break;
+        case MRP_MRM_STATE_PRM_UP:
+        case MRP_MRM_STATE_CHK_RO:
+		mrp->add_test = false;
+		mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
+		break;
+	case MRP_MRM_STATE_CHK_RC:
+		if (mrp->ring_test_curr >= mrp->ring_test_curr_max) {
+			mrp_port_netlink_set_state(mrp->s_port,
+                                           BR_MRP_PORT_STATE_FORWARDING);
+			mrp->ring_test_curr_max = mrp->ring_test_conf_max - 1;
+			mrp->ring_test_curr = 0;
+			mrp->add_test = false;
+			if (!mrp->no_tc)
+				mrp_ring_topo_req(mrp,
+						mrp->ring_topo_conf_interval);
+			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
 
-out:
-	pthread_mutex_unlock(&mrp->lock);
-}
+			mrp->ring_transitions++;
+			mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RO);
+		} else {
+			mrp->ring_test_curr++;
+			mrp->add_test = false;
+			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
+		}
+                break;
+        }
 
-static void mrp_ring_watcher_expired(struct ev_loop *loop,
-				     ev_timer *w, int revents)
-{
-	struct mrp *mrp = container_of(w, struct mrp, ring_watcher_work);
-
-	pthread_mutex_lock(&mrp->lock);
-
-	mrp_netlink_send_ring_test(mrp, mrp->ring_test_conf_interval,
-				   mrp->ring_test_conf_max,
-				   mrp->ring_test_conf_period);
-
-	mrp->ring_watcher_work.repeat = (ev_tstamp)mrp->ring_test_conf_period/ 1000000;
-	ev_timer_again(EV_DEFAULT, &mrp->ring_watcher_work);
-
+unlock:
 	pthread_mutex_unlock(&mrp->lock);
 }
 
@@ -227,28 +198,30 @@ static void mrp_in_test_expired(struct ev_loop *loop,
 
 	pthread_mutex_lock(&mrp->lock);
 
-	if (mrp->mrm_state == MRP_MRM_STATE_AC_STAT1)
-		goto out;
+        switch (mrp->mim_state) {
+        case MRP_MIM_STATE_AC_STAT1:
+                /* Ignore */
+                break;
+        case MRP_MIM_STATE_CHK_IO:
+		mrp_in_test_req(mrp, mrp->in_test_conf_interval);
+		break;
+	case MRP_MIM_STATE_CHK_IC:
+		if (mrp->in_test_curr >= mrp->in_test_curr_max) {
+			mrp_port_netlink_set_state(mrp->i_port,
+                                           BR_MRP_PORT_STATE_FORWARDING);
+			mrp->in_test_curr_max = mrp->in_test_conf_max - 1;
+			mrp->in_test_curr = 0;
+			mrp_in_topo_req(mrp, mrp->in_topo_conf_interval);
+			mrp_in_test_req(mrp, mrp->in_test_conf_interval);
 
-	mrp->add_test = false;
-
-out:
-	pthread_mutex_unlock(&mrp->lock);
-}
-
-static void mrp_in_watcher_expired(struct ev_loop *loop,
-				   ev_timer *w, int revents)
-{
-	struct mrp *mrp = container_of(w, struct mrp, in_watcher_work);
-
-	pthread_mutex_lock(&mrp->lock);
-
-	mrp_netlink_send_in_test(mrp, mrp->in_test_conf_interval,
-				 mrp->in_test_conf_max,
-				 mrp->in_test_conf_period);
-
-	mrp->in_watcher_work.repeat = (ev_tstamp)mrp->in_test_conf_period/ 1000000;
-	ev_timer_again(EV_DEFAULT, &mrp->in_watcher_work);
+			mrp->in_transitions++;
+			mrp_set_mrm_state(mrp, MRP_MIM_STATE_CHK_IO);
+		} else {
+			mrp->in_test_curr++;
+			mrp_in_test_req(mrp, mrp->in_test_conf_interval);
+		}
+                break;
+        }
 
 	pthread_mutex_unlock(&mrp->lock);
 }
@@ -391,22 +364,6 @@ static void mrp_cfm_ccm_expired(struct ev_loop *loop,
 
 int mrp_ring_test_start(struct mrp *mrp, uint32_t interval)
 {
-	int err;
-
-	if (interval == mrp->ring_test_hw_interval)
-		goto update_only_sw;
-
-	mrp->ring_watcher_work.repeat = (ev_tstamp)mrp->ring_test_conf_period/ 1000000;
-	ev_timer_again(EV_DEFAULT, &mrp->ring_watcher_work);
-
-	mrp->ring_test_hw_interval = interval;
-	err = mrp_netlink_send_ring_test(mrp, interval,
-					 mrp->ring_test_conf_max,
-					 mrp->ring_test_conf_period);
-	if (err)
-		return err;
-
-update_only_sw:
 	mrp->ring_test_work.repeat = (ev_tstamp)interval / 1000000;
 	ev_timer_again(EV_DEFAULT, &mrp->ring_test_work);
 	return 0;
@@ -414,11 +371,7 @@ update_only_sw:
 
 void mrp_ring_test_stop(struct mrp *mrp)
 {
-	mrp_netlink_send_ring_test(mrp, 0, 0, 0);
-	/* Make sure that at the next start the HW is updated */
-	mrp->ring_test_hw_interval = -1;
 	ev_timer_stop(EV_DEFAULT, &mrp->ring_test_work);
-	ev_timer_stop(EV_DEFAULT, &mrp->ring_watcher_work);
 }
 
 void mrp_ring_topo_start(struct mrp *mrp, uint32_t interval)
@@ -458,21 +411,6 @@ void mrp_ring_link_down_stop(struct mrp *mrp)
 
 int mrp_in_test_start(struct mrp *mrp, uint32_t interval)
 {
-	int err;
-
-	if (interval == mrp->in_test_hw_interval)
-		goto update_only_sw;
-
-	mrp->in_watcher_work.repeat = (ev_tstamp)mrp->in_test_conf_period/ 1000000;
-	ev_timer_again(EV_DEFAULT, &mrp->in_watcher_work);
-
-	mrp->in_test_hw_interval = interval;
-	err = mrp_netlink_send_in_test(mrp, interval, mrp->in_test_conf_max,
-				       mrp->in_test_conf_period);
-	if (err)
-		return err;
-
-update_only_sw:
 	mrp->in_test_work.repeat = (ev_tstamp)interval / 1000000;
 	ev_timer_again(EV_DEFAULT, &mrp->in_test_work);
 	return 0;
@@ -480,11 +418,7 @@ update_only_sw:
 
 void mrp_in_test_stop(struct mrp *mrp)
 {
-	mrp_netlink_send_in_test(mrp, 0, 0, 0);
-	/* Make sure that at the next start the HW is updated */
-	mrp->in_test_hw_interval = -1;
 	ev_timer_stop(EV_DEFAULT, &mrp->in_test_work);
-	ev_timer_stop(EV_DEFAULT, &mrp->in_watcher_work);
 }
 
 void mrp_in_topo_start(struct mrp *mrp, uint32_t interval)
@@ -583,10 +517,8 @@ void mrp_timer_init(struct mrp *mrp)
 	ev_init(&mrp->clear_fdb_work, mrp_clear_fdb_expired);
 	ev_init(&mrp->ring_topo_work, mrp_ring_topo_expired);
 	ev_init(&mrp->ring_test_work, mrp_ring_test_expired);
-	ev_init(&mrp->ring_watcher_work, mrp_ring_watcher_expired);
 	ev_init(&mrp->ring_link_up_work, mrp_ring_link_up_expired);
 	ev_init(&mrp->ring_link_down_work, mrp_ring_link_down_expired);
-	ev_init(&mrp->in_watcher_work, mrp_in_watcher_expired);
 	ev_init(&mrp->in_test_work, mrp_in_test_expired);
 	ev_init(&mrp->in_topo_work, mrp_in_topo_expired);
 	ev_init(&mrp->in_link_up_work, mrp_in_link_up_expired);

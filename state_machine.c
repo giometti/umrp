@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Rodolfo Giometti <giometti@enneenne.com>
 // Copyright (c) 2020 Microchip Technology Inc. and its subsidiaries.
 // SPDX-License-Identifier: (GPL-2.0)
 
@@ -19,6 +20,7 @@ static LIST_HEAD(mrp_instances);
 
 static const uint8_t mrp_test_dmac[ETH_ALEN] = { 0x1, 0x15, 0x4e, 0x0, 0x0, 0x1 };
 static const uint8_t mrp_control_dmac[ETH_ALEN] = { 0x1, 0x15, 0x4e, 0x0, 0x0, 0x2 };
+static const uint8_t mrp_itest_dmac[ETH_ALEN] = { 0x1, 0x15, 0x4e, 0x0, 0x0, 0x3 };
 static const uint8_t mrp_icontrol_dmac[ETH_ALEN] = { 0x1, 0x15, 0x4e, 0x0, 0x0, 0x4 };
 
 struct mrp_port *mrp_get_port(uint32_t ifindex)
@@ -143,10 +145,6 @@ void mrp_set_mrm_state(struct mrp *mrp, enum mrp_mrm_state_type state)
 	pr_info("mrm_state: %s", mrp_get_mrm_state(state));
 	mrp->mrm_state = state;
 	mrp->no_tc = false;
-
-	mrp_netlink_set_ring_state(mrp, state == MRP_MRM_STATE_CHK_RC ?
-				   BR_MRP_RING_STATE_CLOSED :
-				   BR_MRP_RING_STATE_OPEN);
 }
 
 void mrp_set_mrc_state(struct mrp *mrp, enum mrp_mrc_state_type state)
@@ -159,9 +157,6 @@ void mrp_set_mim_state(struct mrp *mrp, enum mrp_mim_state_type state)
 {
 	pr_info("mim_state: %s", mrp_get_mim_state(state));
 	mrp->mim_state = state;
-
-	mrp_netlink_set_in_state(mrp, state == MRP_MIM_STATE_CHK_IC ?
-				 BR_MRP_IN_STATE_CLOSED : BR_MRP_IN_STATE_OPEN);
 }
 
 void mrp_set_mic_state(struct mrp *mrp, enum mrp_mic_state_type state)
@@ -181,10 +176,6 @@ static int mrp_set_mra_role(struct mrp *mrp)
 		return -EINVAL;
 
 	mrp->mra_support = true;
-
-	err = mrp_netlink_add(mrp, mrp->p_port, mrp->s_port, mrp->prio);
-	if (err)
-		return err;
 
 	/* When changing the role everything is reset */
 	mrp_reset_ring_state(mrp);
@@ -218,10 +209,6 @@ static int mrp_set_mrm_role(struct mrp *mrp)
 	if (!mrp->p_port || !mrp->s_port)
 		return -EINVAL;
 
-	err = mrp_netlink_add(mrp, mrp->p_port, mrp->s_port, mrp->prio);
-	if (err)
-		return err;
-
 	/* When changing the role everything is reset */
 	mrp_reset_ring_state(mrp);
 	mrp_set_mrm_init(mrp);
@@ -252,10 +239,6 @@ static int mrp_set_mrc_role(struct mrp *mrp)
 	 */
 	if (!mrp->p_port || !mrp->s_port)
 		return -EINVAL;
-
-	err = mrp_netlink_add(mrp, mrp->p_port, mrp->s_port, mrp->prio);
-	if (err)
-		return err;
 
 	/* When changing the role everything is reset */
 	mrp_reset_ring_state(mrp);
@@ -426,13 +409,65 @@ static void mrp_send(struct mrp_port *p, struct ethhdr *h, struct frame_buf *fb)
 		packet_send(p->ifindex, iov, 2, sizeof(*h) + fb->size);
 }
 
-/* Notify the HW to start to send frames, if the HW can't do it then the kernel
- * will do it also the kernel will fail, then the function fails so the entire
- * state machine needs to be stopped. This function is called at interval pace
- * but the kernel/HW will be notified only if there is a change in the interval.
+/* Compose MRP_Test frame and forward the frame to the port p.
+ * The MRP_Test frame has the following format:
+ * MRP_Version, MRP_TLVHeader, MRP_Prio, MRP_SA, MRP_PortRole, MRP_RingState,
+ * MRP_Transition, MRP_TimeStamp
+ */
+static void mrp_send_ring_test(struct mrp_port *p)
+{
+	struct br_mrp_ring_test_hdr *hdr = NULL;
+	struct frame_buf *fb = NULL;
+	struct mrp *mrp = p->mrp;
+	struct ethhdr *h = NULL;
+	struct timespec t;
+	uint32_t time_ms;
+
+	clock_gettime(CLOCK_MONOTONIC, &t);
+	time_ms = t.tv_sec * 1000 + t.tv_nsec / 1000000;
+
+	fb = mrp_fb_alloc();
+	if (!fb)
+		return;
+
+	mrp_fb_tlv(fb, BR_MRP_TLV_HEADER_RING_TEST, sizeof(*hdr));
+	hdr = fb_put(fb, sizeof(*hdr));
+
+	hdr->prio = __cpu_to_be16(mrp->prio);
+	ether_addr_copy(hdr->sa, mrp->macaddr);
+	hdr->port_role = __cpu_to_be16(p->role);
+	hdr->state = __cpu_to_be16(mrp->mrm_state == MRP_MRM_STATE_CHK_RC ?
+			BR_MRP_RING_STATE_CLOSED : BR_MRP_RING_STATE_OPEN);
+	hdr->transitions = __cpu_to_be16(mrp->ring_transitions);
+	hdr->timestamp = __cpu_to_be32(time_ms);
+
+	mrp_fb_common(fb, p);
+	mrp_fb_tlv(fb, BR_MRP_TLV_HEADER_END, 0x0);
+
+	h = mrp_eth_alloc(p->macaddr, mrp_test_dmac);
+	if (!h)
+		goto out;
+
+	mrp_send(p, h, fb);
+
+	free(h);
+out:
+	free(fb->start);
+	free(fb);
+}
+
+void mrp_ring_test_send(struct mrp *mrp)
+{
+	mrp_send_ring_test(mrp->p_port);
+	mrp_send_ring_test(mrp->s_port);
+}
+
+/* Send MRP_Test frames on both MRP ports and start a timer to send
+ * continuously frames with specific interval.
  */
 void mrp_ring_test_req(struct mrp *mrp, uint32_t interval)
 {
+	mrp_ring_test_send(mrp);
 	mrp_ring_test_start(mrp, interval);
 }
 
@@ -663,14 +698,66 @@ static void mrp_test_prop_req(struct mrp *mrp)
 	mrp_send_test_prop(mrp->s_port);
 }
 
-/* Notify the HW to start to send frames, if the HW can't do it then the kernel
- * will do it, if also the kernel will fail, then the function fails so the
- * entire state machine needs to be stopped. This function is called at interval
- * pace but the kernel/HW will be notified only if there is a change in the
- * interval.
+/* Compose MRP_IntTest frame and send the frame to the port p.
+ * The MRP_IntTest frame has the following format:
+ * MRP_Version, MRP_TLVHeader, MRP_SA, MRP_IntId, MRP_PortRole, MRP_InState,
+ * MRP_Transition, MRP_TimeStamp
+ */
+static void mrp_send_in_test(struct mrp_port *p)
+{
+	struct br_mrp_in_test_hdr *hdr = NULL;
+	struct frame_buf *fb = NULL;
+	struct mrp *mrp = p->mrp;
+	struct ethhdr *h = NULL;
+	struct timespec t;
+	uint32_t time_ms;
+
+	clock_gettime(CLOCK_MONOTONIC, &t);
+	time_ms = t.tv_sec * 1000 + t.tv_nsec / 1000000;
+
+	fb = mrp_fb_alloc();
+	if (!fb)
+		return;
+
+	mrp_fb_tlv(fb, BR_MRP_TLV_HEADER_IN_TEST, sizeof(*hdr));
+	hdr = fb_put(fb, sizeof(*hdr));
+
+	ether_addr_copy(hdr->sa, mrp->macaddr);
+	hdr->id = __cpu_to_be16(mrp->in_id);
+	hdr->port_role = __cpu_to_be16(p->role);
+	hdr->state = __cpu_to_be16(mrp->mim_state == MRP_MIM_STATE_CHK_IC ?
+				BR_MRP_IN_STATE_CLOSED : BR_MRP_IN_STATE_OPEN);
+	hdr->transitions = __cpu_to_be16(mrp->in_transitions);
+	hdr->timestamp = __cpu_to_be32(time_ms);
+
+	mrp_fb_common(fb, p);
+	mrp_fb_tlv(fb, BR_MRP_TLV_HEADER_END, 0x0);
+
+	h = mrp_eth_alloc(p->macaddr, mrp_itest_dmac);
+	if (!h)
+		goto out;
+
+	mrp_send(p, h, fb);
+
+	free(h);
+out:
+	free(fb->start);
+	free(fb);
+}
+
+void mrp_in_test_send(struct mrp *mrp)
+{
+	mrp_send_in_test(mrp->p_port);
+	mrp_send_in_test(mrp->s_port);
+	mrp_send_in_test(mrp->i_port);
+}
+
+/* Send MRP_IntTopologyChange frames on all MRP ports and start a timer to send
+ * continuously frames with specific interval.
  */
 void mrp_in_test_req(struct mrp *mrp, uint32_t interval)
 {
+	mrp_in_test_send(mrp);
 	mrp_in_test_start(mrp, interval);
 }
 
@@ -925,8 +1012,8 @@ static void mrp_recv_ring_test(struct mrp_port *p, unsigned char *buf)
 	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
 	hdr = (struct br_mrp_ring_test_hdr*)buf;
 
-	/* If the MRP_Test frames was not send by this instance, then don't
-	 * process it.
+	/* If the MRP_Test frames was not send by this instance process it
+	 * if MRA support is enabled. Otherwise it's an error!
 	 */
 	if (!ether_addr_equal(hdr->sa, mrp->macaddr)) {
 		if (!mrp->mra_support) {
@@ -1196,13 +1283,6 @@ static void mrp_recv_nack(struct mrp_port *p, unsigned char *buf)
 	default:
 		break;
 	}
-
-	mrp->test_monitor = true;
-	mrp->p_port->loc = 0;
-	mrp->s_port->loc = 0;
-	mrp_netlink_send_ring_test(mrp, mrp->ring_test_conf_interval,
-				   mrp->ring_test_conf_max,
-				   mrp->ring_test_conf_period);
 }
 
 static void mrp_recv_propagate(struct mrp_port *p, unsigned char *buf)
@@ -1226,6 +1306,7 @@ static void mrp_recv_propagate(struct mrp_port *p, unsigned char *buf)
 
 	mrp->ring_prio = __be16_to_cpu(hdr->other_prio);
 	memcpy(mrp->ring_mac, hdr->other_sa, ETH_ALEN);
+	mrp->ring_test_curr = 0;
 }
 
 /* Represents the state machine for when a MRP_Option frame was
@@ -1668,8 +1749,6 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 			mrp->ring_test_curr = 0;
 			mrp->no_tc = true;
 			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
-			mrp->p_port->loc = 0;
-			mrp->s_port->loc = 0;
 			mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RC);
 		}
 		break;
@@ -2109,7 +2188,7 @@ void mrp_mac_change(uint32_t ifindex, unsigned char *mac)
 
 /* There are 4 different recovery times in which an MRP ring can recover. Based
  * on the each time updates all the configuration variables. The interval are
- * represented in ns.
+ * represented in us.
  */
 static void mrp_update_recovery(struct mrp *mrp,
 				enum mrp_ring_recovery_type ring_recv,
@@ -2124,7 +2203,6 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
 		mrp->ring_test_conf_short = 30 * 1000;
 		mrp->ring_test_conf_interval = 50 * 1000;
-		mrp->ring_test_conf_period = 10000 * 1000;
 		mrp->ring_test_conf_max = 5;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
@@ -2138,7 +2216,6 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
 		mrp->ring_test_conf_short = 10 * 1000;
 		mrp->ring_test_conf_interval = 20 * 1000;
-		mrp->ring_test_conf_period = 10000 * 1000;
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
@@ -2152,7 +2229,6 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
 		mrp->ring_test_conf_short = 1 * 1000;
 		mrp->ring_test_conf_interval = 3500;
-		mrp->ring_test_conf_period = 10000 * 1000;
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
@@ -2166,7 +2242,6 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
 		mrp->ring_test_conf_short = 500;
 		mrp->ring_test_conf_interval = 1000;
-		mrp->ring_test_conf_period = 10000 * 1000;
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
@@ -2184,7 +2259,6 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->in_topo_conf_max = 3;
 		mrp->in_topo_curr_max = mrp->in_topo_conf_max - 1;
 		mrp->in_test_conf_interval = 50 * 1000;
-		mrp->in_test_conf_period = 10000 * 1000;
 		mrp->in_test_conf_max = 8;
 		mrp->in_test_curr_max = mrp->in_test_conf_max;
 		mrp->in_link_conf_interval = 20 * 1000;
@@ -2200,7 +2274,6 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->in_topo_conf_max = 3;
 		mrp->in_topo_curr_max = mrp->in_topo_conf_max - 1;
 		mrp->in_test_conf_interval = 20 * 1000;
-		mrp->in_test_conf_period = 10000 * 1000;
 		mrp->in_test_conf_max = 8;
 		mrp->in_test_curr_max = mrp->in_test_conf_max;
 		mrp->in_link_conf_interval = 20 * 1000;
@@ -2280,77 +2353,6 @@ static void mrp_port_uninit(struct mrp_port *port)
 	pthread_mutex_unlock(&mrp->lock);
 }
 
-/* Notified by kernel when a port stop receiving MRP_Test frames */
-void mrp_port_ring_open(struct mrp_port *p, bool loc)
-{
-	struct mrp *mrp;
-
-	if (!p->mrp)
-		return;
-
-	mrp = p->mrp;
-
-	pthread_mutex_lock(&mrp->lock);
-
-	if (mrp->ring_role != BR_MRP_RING_ROLE_MRM &&
-	    mrp->mra_support != true)
-		goto out;
-
-	if (p->loc == loc)
-		goto out;
-
-	p->loc = loc;
-
-	if (!mrp->p_port->loc ||
-	    !mrp->s_port->loc) {
-		mrp_mrm_recv_ring_test(mrp);
-	} else {
-		mrp_ring_open(mrp);
-	}
-
-out:
-	pthread_mutex_unlock(&mrp->lock);
-}
-
-/* Notified by kernel when a port stop receiving MRP_IntTest frames */
-void mrp_port_in_open(struct mrp_port *p, bool loc)
-{
-	struct mrp *mrp;
-
-	if (!p->mrp)
-		return;
-
-	mrp = p->mrp;
-
-	/* This is called even if there is no interconnect port */
-	if (!mrp->i_port)
-		return;
-
-	pthread_mutex_lock(&mrp->lock);
-
-	if (mrp->in_mode != MRP_IN_MODE_RC)
-		goto out;
-
-	if (p->in_loc == loc)
-		goto out;
-
-	if (mrp->in_role != BR_MRP_IN_ROLE_MIM)
-		goto out;
-
-	p->in_loc = loc;
-
-	if (!mrp->i_port->in_loc ||
-	    !mrp->s_port->in_loc ||
-	    !mrp->p_port->in_loc) {
-		mrp_mim_recv_in_test(mrp);
-	} else {
-		mrp_in_open(mrp);
-	}
-
-out:
-	pthread_mutex_unlock(&mrp->lock);
-}
-
 /* Creates an MRP instance and initialize it */
 static int mrp_create(uint32_t br_ifindex, uint32_t ring_nr, uint16_t in_id)
 {
@@ -2411,9 +2413,6 @@ void mrp_destroy(uint32_t br_ifindex, uint32_t ring_nr, bool offload)
 
 	if (mrp->in_mode == MRP_IN_MODE_LC)
 		mrp_delete_cfm(mrp);
-
-	if (offload)
-		mrp_netlink_del(mrp);
 
 	if (mrp->p_port)
 		free(mrp->p_port);

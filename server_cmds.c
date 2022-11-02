@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Rodolfo Giometti <giometti@enneenne.com>
 // Copyright (c) 2020 Microchip Technology Inc. and its subsidiaries.
 // SPDX-License-Identifier: (GPL-2.0)
 
@@ -141,22 +142,6 @@ mrp_process:
 				mrp_port_link_change(port, true);
 				break;
 			}
-		}
-	}
-
-	if (tb[IFLA_PROTINFO]) {
-		struct rtattr *aftb[IFLA_BRPORT_MAX+1];
-
-		parse_rtattr_nested(aftb, IFLA_BRPORT_MAX, tb[IFLA_PROTINFO]);
-
-		if (aftb[IFLA_BRPORT_MRP_RING_OPEN]) {
-			mrp_port_ring_open(port,
-					   rta_getattr_u8(aftb[IFLA_BRPORT_MRP_RING_OPEN]));
-		}
-
-		if (aftb[IFLA_BRPORT_MRP_IN_OPEN]) {
-			mrp_port_in_open(port,
-					  rta_getattr_u8(aftb[IFLA_BRPORT_MRP_IN_OPEN]));
 		}
 	}
 

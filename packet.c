@@ -67,18 +67,12 @@ static void packet_rcv(EV_P_ ev_io *w, int revents)
 	unsigned char buf[2048];
 	struct sockaddr_ll sl;
 	socklen_t salen = sizeof sl;
-	unsigned char mac[ETH_ALEN];
 
 	cc = recvfrom(fd, &buf, sizeof(buf), 0, (struct sockaddr *) &sl, &salen);
 	if (cc <= 0) {
 		pr_err("recvfrom failed: %d", errno);
 		return;
 	}
-
-	if_get_mac(sl.sll_ifindex, mac);
-
-	if (memcmp(&buf[ETH_ALEN], mac, ETH_ALEN) == 0)
-		return;
 
 	mrp_recv(buf, cc, &sl, salen);
 }

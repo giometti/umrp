@@ -1,15 +1,19 @@
 # Media Redundancy Protocol(MRP)
 
-This application is used to configure the kernel via netlink interface to
-offload to HW the transmition of MRP_Test frames and MRP_InTest frames, forward
-all MRP frames and the detection when the ring becomes open or closed.
+This application is a fork of [https://github.com/microchip-ung/mrp](URL) and it's born to implement a MRP state machine in user-space only by dropping the kernel support to offload to HW the transmition of MRP_Test frames and MRP_InTest frames, forward all MRP frames and the detection when the ring becomes open or closed.
+
+By dropping this kernel support we can implement a clean MRP state machine as described into the International Standard IEC 62439-2 (Edition 2.0 - 2016-03).
 
 ## MRP
 
-This is the first proposal of implementing a subset of the standard. It supports
-the followin roles:  Media Redundancy Manager(MRM), Media Redundancy
-Client(MRC), Media Redundancy Auto-Manager(MRA), Media Redundancy
-Interconnection Manager(MIM) and Media Redundancy Interconnection Client(MIC).
+This is the second proposal of implementing a subset of the standard. It supports the following roles:
+
+  * Media Redundancy Manager(MRM),
+  * Media Redundancy Client(MRC),
+  * Media Redundancy Auto-Manager(MRA),
+  * Media Redundancy Interconnection Manager(MIM), and
+  * Media Redundancy Interconnection Client(MIC).
+
 In a MRP ring, each node needs to support MRP and in a ring can be only one MRM
 and multiple MRC. It is possible to have multiple instances of MRP on a single
 node. But a port can be part of only one MRP instance. In an Interconnect MRP

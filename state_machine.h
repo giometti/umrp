@@ -1,3 +1,4 @@
+// Copyright (c) 2022 Rodolfo Giometti <giometti@enneenne.com>
 // Copyright (c) 2020 Microchip Technology Inc. and its subsidiaries.
 // SPDX-License-Identifier: (GPL-2.0)
 
@@ -24,8 +25,6 @@ struct mrp_port {
 	enum br_mrp_port_role_type	role;
 	uint32_t			ifindex;
 	uint8_t				macaddr[ETH_ALEN];
-	bool				loc;
-	bool				in_loc;
 	uint8_t				operstate;
 };
 
@@ -51,7 +50,6 @@ struct mrp {
 	uint32_t			ring_nr;
 	uint16_t			in_id;
 	bool				mra_support;
-	bool				test_monitor;
 
 	enum br_mrp_ring_role_type	ring_role;
 	enum mrp_ring_recovery_type	ring_recv;
@@ -77,15 +75,12 @@ struct mrp {
 	ev_timer			clear_fdb_work;
 
 	ev_timer			ring_test_work;
-	ev_timer			ring_watcher_work;
 	uint32_t			ring_test_conf_short;
 	uint32_t			ring_test_conf_interval;
 	uint32_t			ring_test_conf_max;
 	uint32_t			ring_test_conf_ext_max;
 	uint32_t			ring_test_curr;
 	uint32_t			ring_test_curr_max;
-	uint32_t			ring_test_conf_period;
-	uint32_t			ring_test_hw_interval;
 
 	ev_timer			ring_topo_work;
 	uint32_t			ring_topo_conf_interval;
@@ -100,15 +95,12 @@ struct mrp {
 	uint32_t			ring_link_curr_max;
 
 	ev_timer			in_test_work;
-	ev_timer			in_watcher_work;
 	uint32_t			in_test_conf_short;
 	uint32_t			in_test_conf_interval;
 	uint32_t			in_test_conf_max;
 	uint32_t			in_test_conf_ext_max;
 	uint32_t			in_test_curr;
 	uint32_t			in_test_curr_max;
-	uint32_t			in_test_conf_period;
-	uint32_t			in_test_hw_interval;
 
 	ev_timer			in_topo_work;
 	uint32_t			in_topo_conf_interval;
@@ -143,8 +135,6 @@ int mrp_recv(unsigned char *buf, int buf_len, struct sockaddr_ll *sl,
 void mrp_port_link_change(struct mrp_port *p, bool up);
 void mrp_destroy(uint32_t ifindex, uint32_t ring_nr, bool offload);
 void mrp_mac_change(uint32_t ifindex, unsigned char *mac);
-void mrp_port_ring_open(struct mrp_port *p, bool loc);
-void mrp_port_in_open(struct mrp_port *p, bool loc);
 void mrp_cfm_link_change(uint32_t br_ifindex, uint32_t peer_mepid,
 			 uint32_t defect);
 
@@ -216,24 +206,12 @@ void mrp_cfm_ccm_start(struct mrp *mrp, uint32_t interval);
 void mrp_cfm_ccm_stop(struct mrp *mrp);
 
 /* netlink.c */
-int mrp_netlink_add(struct mrp *mrp, struct mrp_port *p, struct mrp_port *s,
-		    uint16_t prio);
-int mrp_netlink_del(struct mrp *mrp);
 int mrp_port_netlink_set_state(struct mrp_port *p,
 			       enum br_mrp_port_state_type state);
-int mrp_port_netlink_set_role(struct mrp_port *p,
-			      enum br_mrp_port_role_type role);
 
 int mrp_netlink_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role);
-int mrp_netlink_set_ring_state(struct mrp *mrp,
-			       enum br_mrp_ring_state_type state);
-int mrp_netlink_send_ring_test(struct mrp *mrp, uint32_t interval, uint32_t max,
-			       uint32_t period);
 
 int mrp_netlink_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role);
-int mrp_netlink_set_in_state(struct mrp *mrp, enum br_mrp_in_state_type state);
-int mrp_netlink_send_in_test(struct mrp *mrp, uint32_t interval, uint32_t max,
-			     uint32_t period);
 
 int mrp_netlink_flush(struct mrp *mrp);
 
