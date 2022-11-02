@@ -178,26 +178,26 @@ void mrp_set_mrc_init(struct mrp *mrp)
 
 void mrp_set_mrm_state(struct mrp *mrp, enum mrp_mrm_state_type state)
 {
-	pr_info("mrm_state: %s", mrp_get_mrm_state(state));
+	pr_debug("mrm_state: %s", mrp_get_mrm_state(state));
 	mrp->mrm_state = state;
 	mrp->no_tc = false;
 }
 
 void mrp_set_mrc_state(struct mrp *mrp, enum mrp_mrc_state_type state)
 {
-	pr_info("mrc_state: %s", mrp_get_mrc_state(state));
+	pr_debug("mrc_state: %s", mrp_get_mrc_state(state));
 	mrp->mrc_state = state;
 }
 
 void mrp_set_mim_state(struct mrp *mrp, enum mrp_mim_state_type state)
 {
-	pr_info("mim_state: %s", mrp_get_mim_state(state));
+	pr_debug("mim_state: %s", mrp_get_mim_state(state));
 	mrp->mim_state = state;
 }
 
 void mrp_set_mic_state(struct mrp *mrp, enum mrp_mic_state_type state)
 {
-	pr_info("mic_state: %s", mrp_get_mic_state(state));
+	pr_debug("mic_state: %s", mrp_get_mic_state(state));
 	mrp->mic_state = state;
 }
 
@@ -557,7 +557,7 @@ void mrp_ring_topo_send(struct mrp *mrp, uint32_t time)
  */
 void mrp_ring_topo_req(struct mrp *mrp, uint32_t time)
 {
-	pr_info("topo_req: %d", time);
+	pr_debug("topo_req: %d", time);
 
 	mrp_ring_topo_send(mrp, time * mrp->ring_topo_conf_max);
 
@@ -613,7 +613,7 @@ out:
 /* Send MRP_LinkChange frames on one of MRP ports */
 void mrp_ring_link_req(struct mrp_port *p, bool up, uint32_t interval)
 {
-	pr_info("link_req up: %d interval: %d", up, interval);
+	pr_debug("link_req up: %d interval: %d", up, interval);
 
 	mrp_send_ring_link(p, up, interval);
 }
@@ -848,7 +848,7 @@ void mrp_in_topo_send(struct mrp *mrp, uint32_t interval)
  */
 void mrp_in_topo_req(struct mrp *mrp, uint32_t time)
 {
-	pr_info("in_topo_reg: %d", time);
+	pr_debug("in_topo_reg: %d", time);
 
 	mrp_in_topo_send(mrp, time * mrp->in_topo_conf_max);
 
@@ -904,7 +904,7 @@ out:
 /* Send MRP_IntLinkChange frames on all MRP ports */
 void mrp_in_link_req(struct mrp *mrp, bool up, uint32_t  interval)
 {
-	pr_info("in_link_req up: %d interval: %d", up, interval);
+	pr_debug("in_link_req up: %d interval: %d", up, interval);
 
 	mrp_send_in_link(mrp->p_port, up, interval);
 	mrp_send_in_link(mrp->s_port, up, interval);
@@ -1073,7 +1073,7 @@ static void mrp_mra_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_ring_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_info("recv ring_topo, mrm state: %s",
+	pr_debug("recv ring_topo, mrm state: %s",
 	        mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version, tlv and get ring topo header */
@@ -1095,7 +1095,7 @@ static void mrp_mrc_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_ring_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_info("recv ring_topo, mrc state: %s",
+	pr_debug("recv ring_topo, mrc state: %s",
 	        mrp_get_mrc_state(mrp->mrc_state));
 
 	/* remove MRP version, tlv and get ring topo header */
@@ -1149,7 +1149,7 @@ static void mrp_recv_ring_link(struct mrp_port *p, unsigned char *buf)
 	struct mrp *mrp = p->mrp;
 	struct br_mrp_tlv_hdr *tlv;
 
-	pr_info("recv ring_link, mrm state: %s",
+	pr_debug("recv ring_link, mrm state: %s",
 	        mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version to get the tlv */
@@ -1353,7 +1353,7 @@ static void mrp_recv_option(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_sub_tlv_hdr *sub_tlv;
 	struct mrp *mrp = p->mrp;
 
-	pr_info("recv opt frame, mrm state: %s",
+	pr_debug("recv opt frame, mrm state: %s",
 	        mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version to get the tlv */
@@ -1426,7 +1426,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_in_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_info("recv in_topo, mic state: %s mrm state %s",
+	pr_debug("recv in_topo, mic state: %s mrm state %s",
 	        mrp_get_mic_state(mrp->mic_state),
 	        mrp_get_mrm_state(mrp->mrm_state));
 
@@ -1478,7 +1478,7 @@ static void mrp_recv_in_link(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_tlv_hdr *tlv;
 	struct mrp *mrp = p->mrp;
 
-	pr_info("recv in_link, mim state: %s",
+	pr_debug("recv in_link, mim state: %s",
 	        mrp_get_mim_state(mrp->mim_state));
 
 	/* remove MRP version to get the tlv */
@@ -1530,7 +1530,7 @@ static void mrp_recv_in_link_status(struct mrp_port *p, unsigned char *buf)
 	if (mrp->in_mode != MRP_IN_MODE_LC)
 		return;
 
-	pr_info("recv in_link_status, mic state: %s",
+	pr_debug("recv in_link_status, mic state: %s",
 	        mrp_get_mic_state(mrp->mic_state));
 
 	/* remove MRP version, tlv and get in link status header */
@@ -1753,7 +1753,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 	struct mrp *mrp = p->mrp;
 	uint32_t topo_interval = mrp->ring_topo_conf_interval;
 
-	pr_info("up: %d, mrm_state: %s",
+	pr_debug("up: %d, mrm_state: %s",
 	        up, mrp_get_mrm_state(mrp->mrm_state));
 
 	switch (mrp->mrm_state) {
@@ -1828,7 +1828,7 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 		break;
 	}
 
-	pr_info("new mrm_state: %s", mrp_get_mrm_state(mrp->mrm_state));
+	pr_debug("new mrm_state: %s", mrp_get_mrm_state(mrp->mrm_state));
 }
 
 /* Represents the state machine for when MRP instance has the role MRC and the
@@ -1838,7 +1838,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 {
 	struct mrp *mrp = p->mrp;
 
-	pr_info("up: %d, mrc_state: %s",
+	pr_debug("up: %d, mrc_state: %s",
 	        up, mrp_get_mrc_state(mrp->mrc_state));
 
 	switch (mrp->mrc_state) {
@@ -1950,7 +1950,7 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 		break;
 	}
 
-	pr_info("new mrc_state: %s", mrp_get_mrc_state(mrp->mrc_state));
+	pr_debug("new mrc_state: %s", mrp_get_mrc_state(mrp->mrc_state));
 }
 
 /* Represents the state machine for when MRP instance has the role MIM and the
@@ -1960,7 +1960,7 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 {
 	struct mrp *mrp = p->mrp;
 
-	pr_info("up: %d, mim_state: %s",
+	pr_debug("up: %d, mim_state: %s",
 	        up, mrp_get_mim_state(mrp->mim_state));
 
 	if (up && mrp->in_mode == MRP_IN_MODE_RC) {
@@ -2037,7 +2037,7 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 	}
 
 
-	pr_info("%s: new mim_state: %s", __func__,
+	pr_debug("%s: new mim_state: %s", __func__,
 	        mrp_get_mim_state(mrp->mim_state));
 }
 
@@ -2048,7 +2048,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 {
 	struct mrp *mrp = p->mrp;
 
-	pr_info("up: %d, mic_state: %s",
+	pr_debug("up: %d, mic_state: %s",
 	        up, mrp_get_mic_state(mrp->mic_state));
 
 	if (up && mrp->in_mode == MRP_IN_MODE_RC) {
@@ -2134,7 +2134,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 		}
 	}
 
-	pr_info("%s: new mic_state: %s", __func__,
+	pr_debug("%s: new mic_state: %s", __func__,
 	        mrp_get_mic_state(mrp->mic_state));
 }
 

@@ -103,7 +103,7 @@ static void mrp_ring_topo_expired(struct ev_loop *loop,
 {
 	struct mrp *mrp = container_of(w, struct mrp, ring_topo_work);
 
-	pr_info("ring topo expired: ring_topo_curr_max: %d",
+	pr_debug("ring topo expired: ring_topo_curr_max: %d",
 	        mrp->ring_topo_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
@@ -132,7 +132,7 @@ static void mrp_ring_link_up_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_info("ring link up expired: ring_link_curr_max: %d",
+	pr_debug("ring link up expired: ring_link_curr_max: %d",
 	        mrp->ring_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
@@ -166,7 +166,7 @@ static void mrp_ring_link_down_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_info("ring link down expired: ring_link_curr_max: %d",
+	pr_debug("ring link down expired: ring_link_curr_max: %d",
 	        mrp->ring_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
@@ -232,7 +232,7 @@ static void mrp_in_topo_expired(struct ev_loop *loop,
 {
 	struct mrp *mrp = container_of(w, struct mrp, in_topo_work);
 
-	pr_info("int topo expired: in_topo_curr_max: %d",
+	pr_debug("int topo expired: in_topo_curr_max: %d",
 	        mrp->in_topo_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
@@ -261,7 +261,7 @@ static void mrp_in_link_up_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_info("int link up expired: in_link_curr_max: %d",
+	pr_debug("int link up expired: in_link_curr_max: %d",
 	        mrp->in_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
@@ -295,7 +295,7 @@ static void mrp_in_link_down_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_info("int link down expired: in_link_curr_max: %d",
+	pr_debug("int link down expired: in_link_curr_max: %d",
 	        mrp->in_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
@@ -326,7 +326,7 @@ static void mrp_in_link_status_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_info("in link status expired: in_link_status_curr_max: %d",
+	pr_debug("in link status expired: in_link_status_curr_max: %d",
 	        mrp->in_link_status_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);

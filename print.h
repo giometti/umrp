@@ -17,6 +17,6 @@ void print(int level, char const *format, ...);
 
 #define pr_alert(x...)   print(LOG_ALERT, x)
 #define pr_err(x...)     print(LOG_ERR, x)
-#define pr_info(x...)    print(LOG_INFO, x)
+#define pr_debug(x...)   print(LOG_DEBUG, x)
 
 #endif /* PRINT_H */
