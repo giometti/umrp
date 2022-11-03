@@ -1756,8 +1756,8 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 	struct mrp *mrp = p->mrp;
 	uint32_t topo_interval = mrp->ring_topo_conf_interval;
 
-	pr_debug("up: %d, mrm_state: %s",
-	        up, mrp_get_mrm_state(mrp->mrm_state));
+	pr_debug("port: %s, up: %d, mrm_state: %s",
+	        p->ifname, up, mrp_get_mrm_state(mrp->mrm_state));
 
 	switch (mrp->mrm_state) {
 	case MRP_MRM_STATE_AC_STAT1:
@@ -1830,8 +1830,6 @@ static void mrp_mrm_port_link(struct mrp_port *p, bool up)
 
 		break;
 	}
-
-	pr_debug("new mrm_state: %s", mrp_get_mrm_state(mrp->mrm_state));
 }
 
 /* Represents the state machine for when MRP instance has the role MRC and the
