@@ -2267,7 +2267,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
-		mrp->ring_link_conf_interval = 1;
+		mrp->ring_link_conf_interval = 1 * 1000;
 		mrp->ring_link_conf_max = 4;
 		mrp->ring_link_curr_max = 0;
 		break;
@@ -2280,7 +2280,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
-		mrp->ring_link_conf_interval = 1;
+		mrp->ring_link_conf_interval = 1 * 1000;
 		mrp->ring_link_conf_max = 4;
 		mrp->ring_link_curr_max = 0;
 		break;
