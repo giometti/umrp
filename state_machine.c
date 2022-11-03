@@ -1839,8 +1839,8 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 {
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("up: %d, mrc_state: %s",
-	        up, mrp_get_mrc_state(mrp->mrc_state));
+	pr_debug("port: %s up: %d, mrc_state: %s",
+	        p->ifname, up, mrp_get_mrc_state(mrp->mrc_state));
 
 	switch (mrp->mrc_state) {
 	case MRP_MRC_STATE_AC_STAT1:
@@ -1950,8 +1950,6 @@ static void mrp_mrc_port_link(struct mrp_port *p, bool up)
 		}
 		break;
 	}
-
-	pr_debug("new mrc_state: %s", mrp_get_mrc_state(mrp->mrc_state));
 }
 
 /* Represents the state machine for when MRP instance has the role MIM and the
