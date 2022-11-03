@@ -177,26 +177,30 @@ void mrp_set_mrc_init(struct mrp *mrp)
 
 void mrp_set_mrm_state(struct mrp *mrp, enum mrp_mrm_state_type state)
 {
-	pr_debug("mrm_state: %s", mrp_get_mrm_state(state));
+	pr_debug("bridge: %s, mrm_state: %s", mrp->ifname,
+						mrp_get_mrm_state(state));
 	mrp->mrm_state = state;
 	mrp->no_tc = false;
 }
 
 void mrp_set_mrc_state(struct mrp *mrp, enum mrp_mrc_state_type state)
 {
-	pr_debug("mrc_state: %s", mrp_get_mrc_state(state));
+	pr_debug("bridge: %s, mrc_state: %s", mrp->ifname,
+						mrp_get_mrc_state(state));
 	mrp->mrc_state = state;
 }
 
 void mrp_set_mim_state(struct mrp *mrp, enum mrp_mim_state_type state)
 {
-	pr_debug("mim_state: %s", mrp_get_mim_state(state));
+	pr_debug("bridge: %s, mim_state: %s", mrp->ifname,
+						mrp_get_mim_state(state));
 	mrp->mim_state = state;
 }
 
 void mrp_set_mic_state(struct mrp *mrp, enum mrp_mic_state_type state)
 {
-	pr_debug("mic_state: %s", mrp_get_mic_state(state));
+	pr_debug("bridge: %s, mic_state: %s", mrp->ifname,
+						mrp_get_mic_state(state));
 	mrp->mic_state = state;
 }
 
