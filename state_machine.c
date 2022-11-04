@@ -1152,8 +1152,8 @@ static void mrp_recv_ring_link(struct mrp_port *p, unsigned char *buf)
 	struct mrp *mrp = p->mrp;
 	struct br_mrp_tlv_hdr *tlv;
 
-	pr_debug("recv ring_link, mrm state: %s",
-	        mrp_get_mrm_state(mrp->mrm_state));
+	pr_debug("port: %s, mrm state: %s",
+	        p->ifname, mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version to get the tlv */
 	buf += sizeof(uint16_t);
