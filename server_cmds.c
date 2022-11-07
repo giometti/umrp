@@ -128,7 +128,6 @@ mrp_process:
 			port->operstate = state;
 
 			switch (state) {
-			case IF_OPER_UNKNOWN:
 			case IF_OPER_NOTPRESENT:
 			case IF_OPER_DOWN:
 			case IF_OPER_LOWERLAYERDOWN:
@@ -137,6 +136,9 @@ mrp_process:
 				mrp_port_link_change(port, false);
 				break;
 
+			case IF_OPER_UNKNOWN:
+				port->operstate = IF_OPER_UP;
+				fallthrough;
 			case IF_OPER_UP:
 				mrp_port_link_change(port, true);
 				break;
