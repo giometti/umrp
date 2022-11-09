@@ -19,6 +19,40 @@ static void mrp_clear_fdb_expired(struct ev_loop *loop,
 	mrp_clear_fdb_stop(mrp);
 }
 
+static void mrp_mrm_ring_test_expired(struct mrp *mrp)
+{
+        switch (mrp->mrm_state) {
+        case MRP_MRM_STATE_AC_STAT1:
+                /* Ignore */
+                break;
+        case MRP_MRM_STATE_PRM_UP:
+        case MRP_MRM_STATE_CHK_RO:
+		mrp->add_test = false;
+		mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
+		break;
+	case MRP_MRM_STATE_CHK_RC:
+		if (mrp->ring_test_curr >= mrp->ring_test_curr_max) {
+			mrp_port_set_state(mrp->s_port,
+                                           BR_MRP_PORT_STATE_FORWARDING);
+			mrp->ring_test_curr_max = mrp->ring_test_conf_max - 1;
+			mrp->ring_test_curr = 0;
+			mrp->add_test = false;
+			if (!mrp->no_tc)
+				mrp_ring_topo_req(mrp,
+						mrp->ring_topo_conf_interval);
+			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
+
+			mrp->ring_transitions++;
+			mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RO);
+		} else {
+			mrp->ring_test_curr++;
+			mrp->add_test = false;
+			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
+		}
+                break;
+        }
+}
+
 static void mrp_mrc_ring_test_expired(struct mrp *mrp)
 {
 	if (mrp->ring_test_curr <= mrp->ring_test_curr_max) {
@@ -57,43 +91,11 @@ static void mrp_ring_test_expired(struct ev_loop *loop,
 
 	pthread_mutex_lock(&mrp->lock);
 
-	if (mrp->mra_support && mrp->ring_role == BR_MRP_RING_ROLE_MRC) {
+	if (mrp->mra_support && mrp->ring_role == BR_MRP_RING_ROLE_MRC)
 		mrp_mrc_ring_test_expired(mrp);
-		goto unlock;
-	}
+	else if (mrp->ring_role == BR_MRP_RING_ROLE_MRM)
+		mrp_mrm_ring_test_expired(mrp);
 
-        switch (mrp->mrm_state) {
-        case MRP_MRM_STATE_AC_STAT1:
-                /* Ignore */
-                break;
-        case MRP_MRM_STATE_PRM_UP:
-        case MRP_MRM_STATE_CHK_RO:
-		mrp->add_test = false;
-		mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
-		break;
-	case MRP_MRM_STATE_CHK_RC:
-		if (mrp->ring_test_curr >= mrp->ring_test_curr_max) {
-			mrp_port_set_state(mrp->s_port,
-                                           BR_MRP_PORT_STATE_FORWARDING);
-			mrp->ring_test_curr_max = mrp->ring_test_conf_max - 1;
-			mrp->ring_test_curr = 0;
-			mrp->add_test = false;
-			if (!mrp->no_tc)
-				mrp_ring_topo_req(mrp,
-						mrp->ring_topo_conf_interval);
-			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
-
-			mrp->ring_transitions++;
-			mrp_set_mrm_state(mrp, MRP_MRM_STATE_CHK_RO);
-		} else {
-			mrp->ring_test_curr++;
-			mrp->add_test = false;
-			mrp_ring_test_req(mrp, mrp->ring_test_conf_interval);
-		}
-                break;
-        }
-
-unlock:
 	pthread_mutex_unlock(&mrp->lock);
 }
 
