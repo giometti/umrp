@@ -433,6 +433,20 @@ static void mrp_fb_common(struct frame_buf *fb, struct mrp_port *p)
 	memcpy(hdr->domain, p->mrp->domain, MRP_DOMAIN_UUID_LENGTH);
 }
 
+static void mrp_forward(struct mrp_port *p, struct frame_buf *fb)
+{
+	if (fb->size < 60)
+		fb->size += 60 - fb->size;
+
+	struct iovec iov[1] =
+	{
+		{ .iov_base = fb->start, .iov_len = fb->size }
+	};
+
+	if (p->operstate == IF_OPER_UP)
+		packet_send(p->ifindex, iov, 1, fb->size);
+}
+
 static void mrp_send(struct mrp_port *p, struct ethhdr *h, struct frame_buf *fb)
 {
 	if (sizeof(*h) + fb->size < 60)
@@ -1641,6 +1655,101 @@ static bool mrp_should_process(const struct mrp_port *p,
 	return false;
 }
 
+/* Check if the MRP frame needs to be forwarded and, if so, forward the frame.
+ *
+ * It depends of the MRP instance role and the frame type if the frame needs to
+ * be forwarded or not.
+ */
+static void mrp_check_and_forward(const struct mrp_port *p,
+				  struct frame_buf *fb,
+				  enum br_mrp_tlv_header_type type)
+{
+	struct mrp *mrp = p->mrp;
+
+	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM)
+		switch (type) {
+		case BR_MRP_TLV_HEADER_IN_TEST:
+		case BR_MRP_TLV_HEADER_IN_TOPO:
+		case BR_MRP_TLV_HEADER_IN_LINK_UP:
+		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+			if (mrp->p_port->state != BR_MRP_PORT_STATE_BLOCKED &&
+			    mrp->s_port->state != BR_MRP_PORT_STATE_BLOCKED) {
+				if (p == mrp->p_port)
+					mrp_forward(mrp->s_port, fb);
+				else /* mrp->s_port */
+					mrp_forward(mrp->p_port, fb);
+			}
+			break;
+		default:
+			break;
+		}
+	else /* mrp->ring_role == BR_MRP_RING_ROLE_MRC */
+		switch (type) {
+		case BR_MRP_TLV_HEADER_RING_TEST:
+		case BR_MRP_TLV_HEADER_RING_LINK_DOWN:
+		case BR_MRP_TLV_HEADER_RING_LINK_UP:
+		case BR_MRP_TLV_HEADER_RING_TOPO:
+			if (p == mrp->p_port)
+				mrp_forward(mrp->s_port, fb);
+			else /* mrp->s_port */
+                                mrp_forward(mrp->p_port, fb);
+			break;
+		case BR_MRP_TLV_HEADER_IN_TEST:
+		case BR_MRP_TLV_HEADER_IN_TOPO:
+		case BR_MRP_TLV_HEADER_IN_LINK_UP:
+		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+			if (mrp->ring_role == BR_MRP_RING_ROLE_MRC &&
+			    p->ifindex == 0) {
+				if (p == mrp->p_port)
+					mrp_forward(mrp->s_port, fb);
+				else /* mrp->s_port */
+					mrp_forward(mrp->p_port, fb);
+			}
+			break;
+		default:
+			break;
+		}
+
+	if (mrp->in_role == BR_MRP_IN_ROLE_MIM)
+		switch (type) {
+		case BR_MRP_TLV_HEADER_IN_TOPO:
+		case BR_MRP_TLV_HEADER_IN_LINK_UP:
+		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+			if (p == mrp->p_port)
+				mrp_forward(mrp->s_port, fb);
+			else /* mrp->s_port */
+				mrp_forward(mrp->p_port, fb);
+			break;
+		default:
+			break;
+		}
+	else /* mrp->in_role == BR_MRP_RING_ROLE_MIC */
+		switch (type) {
+		case BR_MRP_TLV_HEADER_IN_TEST:
+			if (p == mrp->p_port) {
+				mrp_forward(mrp->s_port, fb);
+				mrp_forward(mrp->i_port, fb);
+			} else if (p == mrp->s_port) {
+                                mrp_forward(mrp->p_port, fb);
+				mrp_forward(mrp->i_port, fb);
+			} else /* mrp->i_port */ {
+                                mrp_forward(mrp->p_port, fb);
+				mrp_forward(mrp->s_port, fb);
+			}
+			break;
+		case BR_MRP_TLV_HEADER_IN_TOPO:
+		case BR_MRP_TLV_HEADER_IN_LINK_UP:
+		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+			if (p == mrp->p_port)
+				mrp_forward(mrp->s_port, fb);
+			else /* mrp->s_port */
+                                mrp_forward(mrp->p_port, fb);
+			break;
+		default:
+			break;
+		}
+}
+
 static void mrp_process(struct mrp_port *p, unsigned char *buf,
 			enum br_mrp_tlv_header_type type)
 {
@@ -1686,6 +1795,8 @@ static void mrp_process_frame(struct mrp_port *port, struct frame_buf *fb,
 	struct mrp *mrp = port->mrp;
 
 	pthread_mutex_lock(&mrp->lock);
+
+	mrp_check_and_forward(port, fb, type);
 
 	if (mrp_should_process(port, type)) {
 		unsigned char nbuf[2048];
