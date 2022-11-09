@@ -1098,7 +1098,7 @@ static void mrp_mrc_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_ring_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("recv ring_topo, mrc state: %s",
+	pr_debug("port: %s, mrc state: %s", p->ifname,
 	        mrp_get_mrc_state(mrp->mrc_state));
 
 	/* remove MRP version, tlv and get ring topo header */
