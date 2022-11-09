@@ -24,6 +24,7 @@
 #define unlikely(x)             __builtin_expect(!!(x), 0)
 #define stringify(s)            __stringify(s)
 #define __stringify(s)          #s
+#define fallthrough		do {} while (0)
 
 extern int __debug_level;
 #define __message(stream, layout, fmt, args...)                         \
