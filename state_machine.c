@@ -630,7 +630,8 @@ out:
 /* Send MRP_LinkChange frames on one of MRP ports */
 void mrp_ring_link_req(struct mrp_port *p, bool up, uint32_t interval)
 {
-	pr_debug("link_req up: %d interval: %d", up, interval);
+	pr_debug("port: %s, link_req up: %d interval: %d",
+				p->ifname, up, interval);
 
 	mrp_send_ring_link(p, up, interval);
 }
