@@ -101,6 +101,8 @@ static void ctl_rcv_handler(EV_P_ ev_io *w, int revents)
 
 int ctl_socket_init(void)
 {
+	int ret;
+
 	int s = server_socket();
 	if (0 > s)
 		return -1;
@@ -110,9 +112,15 @@ int ctl_socket_init(void)
 	ev_io_init(&client_watcher, ctl_rcv_handler, fd, EV_READ);
 	ev_io_start(loop, &client_watcher);
 
-	CTL_init();
+	ret = CTL_init();
+	if (ret == 0)
+		return 0;
 
-	return 0;
+	pr_err("unable to init CTL layer");
+	ev_io_stop(loop, &client_watcher);
+	close(fd);
+
+	return ret;
 }
 
 void ctl_socket_cleanup(void)
