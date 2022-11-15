@@ -66,6 +66,8 @@ add_executable(mrp mrp.c)
 
 if (NOT DEFINED driver OR "x${driver}" STREQUAL "xnetlink")
 	set (driver_sources "ifdriver_netlink.c")
+elseif ("x${driver}" STREQUAL "xkbact")
+	set (driver_sources "ifdriver_kbact.c")
 else ()
 	message(FATAL_ERROR "unknow driver ${driver}.")
 endif ()
