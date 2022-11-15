@@ -49,6 +49,7 @@ int signal_init(void)
 int main(int argc, char *argv[])
 {
 	int c;
+	int ret;
 
 	while ((c = getopt(argc, argv, "hd")) != -1) {
 		switch (c) {
@@ -64,8 +65,16 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ctl_socket_init();
-	packet_socket_init();
+	ret = ctl_socket_init();
+	if (ret < 0) {
+		pr_err("unable to init CTL socket layer");
+		exit(EXIT_FAILURE);
+	}
+	ret = packet_socket_init();
+	if (ret < 0) {
+		pr_err("unable to init PACKET socket layer");
+		exit(EXIT_FAILURE);
+	}
 
 	ev_run(EV_DEFAULT, 0);
 
