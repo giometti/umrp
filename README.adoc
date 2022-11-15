@@ -44,7 +44,9 @@ MRP_InTest frames between all ports.
 ## Dependencies
 
 It depends on the following libs 'libnl', 'libev', 'libmnl' and
-'libcfm' and on a kernel that has MRP support(at least v5.8)
+'libcfm' and on a kernel that has MRP support (at least v5.8). This last
+requirement, at the moment, is mandatory for compiling the code only since the
+daemon can be easily modified in order to not use kernel MRP support at all (see `ifdriver_*.c` code).
 
 CFM can be found here: https://github.com/microchip-ung/cfm
 
@@ -71,10 +73,6 @@ start the server using this command to display all the log to the console:
 ```bash
 mrp_server -d &
 ```
-
-If the kernel doesn't support MRP, then the server will print an error message
-when a MRP instance is created. It is required for the kernel to be compiled
-with the config CONFIG_BRIDGE_MRP.
 
 Before configuring the mrp instance it is required to create a bridge and add at
 least 2 ports to the bridge.
