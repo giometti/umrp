@@ -728,7 +728,7 @@ static void mrp_send_test_prop(struct mrp_port *p)
 
 	prop_hdr->prio = __cpu_to_be16(mrp->prio);
 	ether_addr_copy(prop_hdr->sa, mrp->macaddr);
-	prop_hdr->other_prio = __cpu_to_be16(mrp->prio);
+	prop_hdr->other_prio = __cpu_to_be16(mrp->ring_prio);
 	ether_addr_copy(prop_hdr->other_sa, mrp->ring_mac);
 
 	mrp_fb_common(fb, p);
