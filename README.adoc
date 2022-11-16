@@ -57,6 +57,12 @@ cmake -B build/ -S .
 make -C build
 ```
 
+To wipe all generated files during the compilation just use:
+
+```
+rm -rf build
+```
+
 ## Usage
 
 First the server needs to be start. Using the command
