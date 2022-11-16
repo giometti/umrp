@@ -53,10 +53,8 @@ CFM can be found here: https://github.com/microchip-ung/cfm
 ## Build
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make -j12
+cmake -B build/ -S .
+make -C build
 ```
 
 ## Usage
