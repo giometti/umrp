@@ -1687,6 +1687,10 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		}
 	else /* mrp->ring_role == BR_MRP_RING_ROLE_MRC */
 		switch (type) {
+		case BR_MRP_TLV_HEADER_OPTION:
+			if (!mrp->mra_support)
+				break;
+			fallthrough;
 		case BR_MRP_TLV_HEADER_RING_TEST:
 		case BR_MRP_TLV_HEADER_RING_LINK_DOWN:
 		case BR_MRP_TLV_HEADER_RING_LINK_UP:
