@@ -52,7 +52,7 @@ void packet_send(int ifindex, const struct iovec *iov, int iov_count, int len)
 
 	if (l < 0) {
 		if(errno != EWOULDBLOCK)
-			pr_err("send failed: %d", errno);
+			pr_err("send failed: %m");
 	} else {
 		if (l != len)
 			pr_err("short write in sendto: %d instead of %d",
@@ -69,7 +69,7 @@ static void packet_rcv(EV_P_ ev_io *w, int revents)
 
 	cc = recvfrom(fd, &buf, sizeof(buf), 0, (struct sockaddr *) &sl, &salen);
 	if (cc <= 0) {
-		pr_err("recvfrom failed: %d", errno);
+		pr_err("recvfrom failed: %m");
 		return;
 	}
 
@@ -100,18 +100,18 @@ int packet_socket_init(void)
 
 	s = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 	if(s < 0) {
-		pr_err("socket failed: %d", errno);
+		pr_err("socket failed: %m");
 		return -1;
 	}
 
 	if (setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, &prog, sizeof(prog)) < 0) {
-		pr_err("setsockopt packet filter failed: %d", errno);
+		pr_err("setsockopt packet filter failed: %m");
 	} else if (setsockopt(s, SOL_PACKET, PACKET_IGNORE_OUTGOING, &ignore_out, sizeof(ignore_out)) < 0) {
-		pr_err("setsockopt packet ignore outgoing: %d", errno);
+		pr_err("setsockopt packet ignore outgoing: %m");
 	} else if (setsockopt(s, SOL_SOCKET, SO_PRIORITY, &optval, 4)) {
-		pr_err("setsockopt priority failed: %d", errno);
+		pr_err("setsockopt priority failed: %m");
 	} else if (fcntl(s, F_SETFL, O_NONBLOCK) < 0) {
-		pr_err("fcntl set nonblock failed: %d", errno);
+		pr_err("fcntl set nonblock failed: %m");
 	} else {
 		fd = s;
 		ev_io_init(&packet_watcher, packet_rcv, fd, EV_READ);
