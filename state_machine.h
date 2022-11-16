@@ -89,6 +89,8 @@ struct mrp {
 	uint32_t			ring_test_conf_ext_max;
 	uint32_t			ring_test_curr;
 	uint32_t			ring_test_curr_max;
+	uint32_t			ring_mon_curr;
+	uint32_t			ring_mon_curr_max;
 
 	ev_timer			ring_topo_work;
 	uint32_t			ring_topo_conf_interval;

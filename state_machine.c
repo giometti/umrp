@@ -172,7 +172,7 @@ void mrp_set_mrm_init(struct mrp *mrp)
 void mrp_set_mrc_init(struct mrp *mrp)
 {
 	mrp->ring_link_curr_max = mrp->ring_link_conf_max;
-	mrp->ring_test_curr = 0;
+	mrp->ring_mon_curr = 0;
 }
 
 void mrp_set_mrm_state(struct mrp *mrp, enum mrp_mrm_state_type state)
@@ -1050,7 +1050,7 @@ static void mrp_mra_recv_ring_test(struct mrp *mrp,
 			return;
 
 		if (mrp_better_than_own(mrp, hdr))
-			mrp->ring_test_curr = 0;
+			mrp->ring_mon_curr = 0;
 
 		mrp->ring_prio = hdr->prio;
 	}
@@ -1357,7 +1357,7 @@ static void mrp_recv_propagate(struct mrp_port *p, unsigned char *buf)
 
 	mrp->ring_prio = __be16_to_cpu(hdr->other_prio);
 	memcpy(mrp->ring_mac, hdr->other_sa, ETH_ALEN);
-	mrp->ring_test_curr = 0;
+	mrp->ring_mon_curr = 0;
 }
 
 /* Represents the state machine for when a MRP_Option frame was
@@ -2357,6 +2357,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_test_conf_interval = 50 * 1000;
 		mrp->ring_test_conf_max = 5;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
+		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
 		mrp->ring_link_conf_interval = 100 * 1000;
 		mrp->ring_link_conf_max = 4;
@@ -2370,6 +2371,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_test_conf_interval = 20 * 1000;
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
+		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
 		mrp->ring_link_conf_interval = 20 * 1000;
 		mrp->ring_link_conf_max = 4;
@@ -2383,6 +2385,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_test_conf_interval = 3500;
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
+		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
 		mrp->ring_link_conf_interval = 1 * 1000;
 		mrp->ring_link_conf_max = 4;
@@ -2396,6 +2399,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 		mrp->ring_test_conf_interval = 1000;
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
+		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
 		mrp->ring_link_conf_interval = 1 * 1000;
 		mrp->ring_link_conf_max = 4;

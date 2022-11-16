@@ -55,11 +55,11 @@ static void mrp_mrm_ring_test_expired(struct mrp *mrp)
 
 static void mrp_mrc_ring_test_expired(struct mrp *mrp)
 {
-	if (mrp->ring_test_curr <= mrp->ring_test_curr_max) {
-		mrp->ring_test_curr++;
-		mrp_ring_test_req(mrp, mrp->ring_test_conf_short);
+	if (mrp->ring_mon_curr <= mrp->ring_mon_curr_max) {
+		mrp->ring_mon_curr++;
+		mrp_ring_test_start(mrp, mrp->ring_test_conf_short);
 	} else {
-		mrp_ring_test_req(mrp, mrp->ring_test_conf_short);
+		mrp_ring_test_start(mrp, mrp->ring_test_conf_short);
 		mrp_set_mrm_init(mrp);
 
 		switch (mrp->mrc_state) {
