@@ -152,6 +152,11 @@ ip link set dev br0 up
 For mode details on how to configure CFM:
 https://github.com/microchip-ung/cfm
 
+## Known bugs
+
+* At the moment just the Kbact ifdriver is known to work properly.
+* At the moment just MRM, MRC and MRA roles are known to work properly.
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to
 discuss what you would like to change.
