@@ -1369,7 +1369,7 @@ static void mrp_recv_option(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_sub_tlv_hdr *sub_tlv;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("recv opt frame, mrm state: %s",
+	pr_debug("port %s, mrm state: %s", p->ifname,
 	        mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version to get the tlv */
