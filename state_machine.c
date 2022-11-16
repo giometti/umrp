@@ -1292,11 +1292,9 @@ static bool mrp_better_than_host(struct mrp *mrp,
 static void mrp_recv_nack(struct mrp_port *p, unsigned char *buf)
 {
 	struct br_mrp_test_mgr_nack_hdr *hdr;
-	struct mrp *mrp;
+	struct mrp *mrp = p->mrp;
 
 	buf += sizeof(struct br_mrp_sub_tlv_hdr);
-	mrp = p->mrp;
-
 	hdr = (struct br_mrp_test_mgr_nack_hdr *)buf;
 
 	if (mrp->ring_role == BR_MRP_RING_ROLE_MRC)
