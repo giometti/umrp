@@ -57,10 +57,20 @@ cmake -B build/ -S .
 make -C build
 ```
 
+**Note:** by default the system will use the ifdriver netlink (file `ifdriver_netlink.c`). See below if you wish using another ifdriver.
+
 To wipe all generated files during the compilation just use:
 
 ```
 rm -rf build
+```
+
+### Build another ifdriver
+
+If your system doesn't support the default netlink ifdriver you can use another one just by appending the string `-Ddriver=<name>` to the `cmake` command line. For instance to use the Kbact ifdriver (file `ifdriver_kbact.c`) instead of the default one (see above) just use:
+
+```
+cmake -B build/ -S . -Ddriver=kbact
 ```
 
 ## Usage
