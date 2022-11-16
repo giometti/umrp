@@ -979,8 +979,7 @@ void mrp_in_link_status_req(struct mrp *mrp, uint32_t interval)
 }
 
 /* Represents the state machine for when a MRP_Test frame was received on one
- * of the MRP ports and the MRP instance has the role MRM. When MRP instance has
- * the role MRC, it doesn't need to process MRP_Test frames.
+ * of the MRP ports and the MRP instance has the role MRM.
  */
 static void mrp_mrm_recv_ring_test(struct mrp *mrp)
 {
@@ -1619,6 +1618,10 @@ static bool mrp_should_process(const struct mrp_port *p,
 
 	switch (type) {
 	case BR_MRP_TLV_HEADER_RING_TEST:
+		if (mrp->ring_role == BR_MRP_RING_ROLE_MRM ||
+		    (mrp->ring_role == BR_MRP_RING_ROLE_MRC && mrp->mra_support))
+			return true;
+		break;
 	case BR_MRP_TLV_HEADER_RING_LINK_DOWN:
 	case BR_MRP_TLV_HEADER_RING_LINK_UP:
 		if (mrp->ring_role == BR_MRP_RING_ROLE_MRM)
