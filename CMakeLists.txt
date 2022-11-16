@@ -57,10 +57,17 @@ if (NOT (LibCFM_INCLUDE_DIR AND LibCFM_LIBRARY))
     message(FATAL_ERROR "Could not find libcfm_netlink.")
 endif ()
 ## mrp (this project) ####################################
+execute_process (
+    COMMAND git describe --tags --abbrev=10 --dirty --long --always
+    OUTPUT_VARIABLE __VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 add_definitions(-Wall)
 
 include_directories(${LibNL_INCLUDE_DIR} ${LibEV_INCLUDE_DIR} ${LibMNL_INCLUDE_DIR} ${LibCFM_INCLUDE_DIR}  include/uapi)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__VERSION=\\\"${__VERSION}\\\"")
 
 add_executable(mrp mrp.c)
 

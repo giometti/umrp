@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	pr_info("UMRP ver. %s", VERSION);
 	ev_run(EV_DEFAULT, 0);
 
 	packet_socket_cleanup();
