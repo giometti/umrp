@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: (GPL-2.0)
 
 project (mrp C)
+set(MRP_IFDRIVER netlink CACHE STRING "networking hardware driver")
+set_property(CACHE MRP_IFDRIVER PROPERTY STRINGS netlink kbact)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -71,15 +73,12 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__VERSION=\\\"${__VERSION}\\\"")
 
 add_executable(mrp mrp.c)
 
-if (NOT DEFINED driver OR "x${driver}" STREQUAL "xnetlink")
-	set (driver_sources "ifdriver_netlink.c")
-elseif ("x${driver}" STREQUAL "xkbact")
-	set (driver_sources "ifdriver_kbact.c")
-else ()
-	message(FATAL_ERROR "unknow driver ${driver}.")
+set (MRP_IFDRIVER_SRC "ifdriver_${MRP_IFDRIVER}.c")
+if (NOT EXISTS "${CMAKE_SOURCE_DIR}/${MRP_IFDRIVER_SRC}")
+    message(FATAL_ERROR "no ${MRP_IFDRIVER_SRC} file! Unknown driver ${MRP_IFDRIVER}.")
 endif ()
 
-add_executable(mrp_server mrp_server.c packet.c server_socket.c server_cmds.c state_machine.c timer.c libnetlink.c utils.c ${driver_sources})
+add_executable(mrp_server mrp_server.c packet.c server_socket.c server_cmds.c state_machine.c timer.c libnetlink.c utils.c ${MRP_IFDRIVER_SRC})
 target_link_libraries(mrp_server ${LibNL_LIBRARY} ${LibNL_GENL_LIBRARY}
     ${LibEV_LIBRARY} ${LibMNL_LIBRARY} ${LibCFM_LIBRARY})
 
