@@ -4,6 +4,7 @@
 project (mrp C)
 set(MRP_IFDRIVER netlink CACHE STRING "networking hardware driver")
 set_property(CACHE MRP_IFDRIVER PROPERTY STRINGS netlink kbact)
+option(MRP_HAVE_DBus1 "DBus RPC support" OFF)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -58,6 +59,20 @@ find_library(LibCFM_LIBRARY NAMES cfm_netlink)
 if (NOT (LibCFM_INCLUDE_DIR AND LibCFM_LIBRARY))
     message(FATAL_ERROR "Could not find libcfm_netlink.")
 endif ()
+
+## libdbus ########################################
+if (MRP_HAVE_DBus1)
+    find_package(DBus1 REQUIRED)
+
+    set(MRP_DBUS_PATH "/org/mrp/Event" CACHE STRING "the path to the object emitting the signal")
+    set(MRP_DBUS_IFACE "org.mrp.Event" CACHE STRING "the interface the signal is emitted from")
+
+    set(MRP_SERVER_DBus1_CFLAGS "-DMRP_HAVE_DBUS
+				-DMRP_DBUS_PATH=\\\"${MRP_DBUS_PATH}\\\"
+				-DMRP_DBUS_IFACE=\\\"${MRP_DBUS_IFACE}\\\"")
+    set(MRP_SERVER_DBus1_SRCS dbus.c)
+endif ()
+
 ## mrp (this project) ####################################
 execute_process (
     COMMAND git -C ${CMAKE_SOURCE_DIR} describe --tags --abbrev=10 --dirty --long --always
@@ -65,9 +80,9 @@ execute_process (
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-add_definitions(-Wall)
+add_definitions(-Wall ${MRP_SERVER_DBus1_CFLAGS})
 
-include_directories(${LibNL_INCLUDE_DIR} ${LibEV_INCLUDE_DIR} ${LibMNL_INCLUDE_DIR} ${LibCFM_INCLUDE_DIR}  include/uapi)
+include_directories(${LibNL_INCLUDE_DIR} ${LibEV_INCLUDE_DIR} ${LibMNL_INCLUDE_DIR} ${LibCFM_INCLUDE_DIR} ${DBus1_INCLUDE_DIR} ${DBus1_ARCH_INCLUDE_DIR} include/uapi)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__VERSION=\\\"${__VERSION}\\\"")
 
@@ -78,9 +93,9 @@ if (NOT EXISTS "${CMAKE_SOURCE_DIR}/${MRP_IFDRIVER_SRC}")
     message(FATAL_ERROR "no ${MRP_IFDRIVER_SRC} file! Unknown driver ${MRP_IFDRIVER}.")
 endif ()
 
-add_executable(mrp_server mrp_server.c packet.c server_socket.c server_cmds.c state_machine.c timer.c libnetlink.c utils.c ${MRP_IFDRIVER_SRC})
+add_executable(mrp_server mrp_server.c packet.c server_socket.c server_cmds.c state_machine.c timer.c libnetlink.c utils.c ${MRP_SERVER_DBus1_SRCS} ${MRP_IFDRIVER_SRC})
 target_link_libraries(mrp_server ${LibNL_LIBRARY} ${LibNL_GENL_LIBRARY}
-    ${LibEV_LIBRARY} ${LibMNL_LIBRARY} ${LibCFM_LIBRARY})
+    ${LibEV_LIBRARY} ${LibMNL_LIBRARY} ${LibCFM_LIBRARY} ${DBus1_LIBRARY})
 
 install(TARGETS mrp_server mrp RUNTIME DESTINATION bin)
 

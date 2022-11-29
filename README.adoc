@@ -73,6 +73,22 @@ If your system doesn't support the default netlink ifdriver you can use another 
 cmake -B build/ -S . -DMRP_IFDRIVER=kbact
 ```
 
+### Enable DBus support
+
+If you wish using DBus support to remotely signal a port state change, just add the string `-DMRP_HAVE_DBus1=ON` to the `cmake` command line as below:
+
+```
+cmake -B build/ -S . -DMRP_HAVE_DBus1=ON
+```
+
+By default all Dbus messages are sent to the path `/org/mrp/Event` by the interface `org.mrp.Event`, but you may alter these defaults by using a command line as below:
+
+```
+cmake -B build/ -S . -DMRP_HAVE_DBus1=ON -DMRP_DBUS_PATH="/org/act/mrp" -DMRP_DBUS_IFACE="org.act.mrp"
+```
+
+**Note:** to successfully compile the code you may need to install the DBus library code (for instance on Debian based system you can use the command `sudo apt install libdbus-1-dev`).
+
 ## Usage
 
 First the server needs to be start. Using the command

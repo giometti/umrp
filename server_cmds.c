@@ -23,6 +23,7 @@
 #include "list.h"
 #include "ifdriver.h"
 #include "cfm_netlink.h"
+#include "dbus.h"
 
 static struct rtnl_handle rth;
 static ev_io netlink_watcher;
@@ -182,6 +183,11 @@ static void netlink_uninit(void)
 
 int CTL_init(void)
 {
+	if (dbus_init()) {
+		pr_err("dbus init failed!");
+                return -1;
+        }
+
 	if (netlink_init()) {
 		pr_err("netlink init failed!");
 		return -1;
@@ -207,6 +213,7 @@ int CTL_init(void)
 
 void CTL_cleanup(void)
 {
+	dbus_uninit();
 	ifdriver_uninit();
 	netlink_uninit();
 	mrp_uninit();

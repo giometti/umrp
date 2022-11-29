@@ -15,6 +15,7 @@
 #include "packet.h"
 #include "pdu.h"
 #include "cfm_netlink.h"
+#include "dbus.h"
 
 static LIST_HEAD(mrp_instances);
 
@@ -61,6 +62,9 @@ int mrp_port_set_state(struct mrp_port *p, enum br_mrp_port_state_type state)
         ret = ifdriver_port_set_state(p, state);
 	if (ret)
 		pr_warn("cannot set state %d for port %s", state, p->ifname);
+
+	dbus_port_state_changed(p, state);
+
 	return ret;
 }
 
