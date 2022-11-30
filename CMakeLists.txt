@@ -60,7 +60,7 @@ if (NOT (LibCFM_INCLUDE_DIR AND LibCFM_LIBRARY))
 endif ()
 ## mrp (this project) ####################################
 execute_process (
-    COMMAND git describe --tags --abbrev=10 --dirty --long --always
+    COMMAND git -C ${CMAKE_SOURCE_DIR} describe --tags --abbrev=10 --dirty --long --always
     OUTPUT_VARIABLE __VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
