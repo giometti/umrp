@@ -117,7 +117,6 @@ int ctl_socket_init(void)
 	if (ret == 0)
 		return 0;
 
-	pr_err("unable to init CTL layer");
 	ev_io_stop(loop, &client_watcher);
 	close(fd);
 
