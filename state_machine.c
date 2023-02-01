@@ -1744,12 +1744,19 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 	switch (mrp->in_role) {
 	case BR_MRP_IN_ROLE_MIM:
 		switch (type) {
+		/* The MIM shall forward MRP_InLinkChange frames,
+		 * MRP_InLinkStatusPoll frames and MRP_InTopologyChange frames
+		 * received on one ring port to the other ring port and vice
+		 * versa, if these frames are not received at its
+		 * interconnection port.
+		 */
 		case BR_MRP_TLV_HEADER_IN_TOPO:
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
 			if (p == mrp->p_port)
 				mrp_forward(mrp->s_port, fb);
-			else /* mrp->s_port */
+			else if (p == mrp->s_port)
 				mrp_forward(mrp->p_port, fb);
 			break;
 		default:
