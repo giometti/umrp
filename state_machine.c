@@ -1675,15 +1675,21 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 	switch (mrp->ring_role) {
 	case BR_MRP_RING_ROLE_MRM:
 		switch (type) {
+		/* The MRM shall not forward MRP_InTest frames,
+		 * MRP_InLinkChange frames, MRP_InLinkStatusPoll frames and
+		 * MRP_InTopologyChange frames between its ring ports, if one
+		 * of its ring port is in the port state BLOCKED.
+		 */
 		case BR_MRP_TLV_HEADER_IN_TEST:
 		case BR_MRP_TLV_HEADER_IN_TOPO:
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
 			if (mrp->p_port->state != BR_MRP_PORT_STATE_BLOCKED &&
 			    mrp->s_port->state != BR_MRP_PORT_STATE_BLOCKED) {
 				if (p == mrp->p_port)
 					mrp_forward(mrp->s_port, fb);
-				else /* mrp->s_port */
+				else if (p == mrp->s_port)
 					mrp_forward(mrp->p_port, fb);
 			}
 			break;
