@@ -1703,24 +1703,33 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 			if (!mrp->mra_support)
 				break;
 			fallthrough;
+		/* The MRC shall forward MRP_Test frames, MRP_LinkChange frames
+		 * and MRP_TopologyChange frames received on one ring port to
+		 * the other ring port and vice versa.
+		 */
 		case BR_MRP_TLV_HEADER_RING_TEST:
 		case BR_MRP_TLV_HEADER_RING_LINK_DOWN:
 		case BR_MRP_TLV_HEADER_RING_LINK_UP:
 		case BR_MRP_TLV_HEADER_RING_TOPO:
 			if (p == mrp->p_port)
 				mrp_forward(mrp->s_port, fb);
-			else /* mrp->s_port */
+			else if (p == mrp->s_port)
                                 mrp_forward(mrp->p_port, fb);
 			break;
+		/* The MRC shall forward MRP_InTest frames, MRP_InLinkChange
+		 * frames, MRP_InTopologyChange frames and MRP_InLinkStatusPoll
+		 * frames between its ring ports, if no MIM and no MIC is active
+		 * on the node at the same time.
+		 */
 		case BR_MRP_TLV_HEADER_IN_TEST:
 		case BR_MRP_TLV_HEADER_IN_TOPO:
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
-			if (mrp->ring_role == BR_MRP_RING_ROLE_MRC &&
-			    p->ifindex == 0) {
+		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
+			if (mrp->in_role == BR_MRP_IN_ROLE_DISABLED) {
 				if (p == mrp->p_port)
 					mrp_forward(mrp->s_port, fb);
-				else /* mrp->s_port */
+				else if (p == mrp->s_port)
 					mrp_forward(mrp->p_port, fb);
 			}
 			break;
