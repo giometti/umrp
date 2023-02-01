@@ -1672,7 +1672,8 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 {
 	struct mrp *mrp = p->mrp;
 
-	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM)
+	switch (mrp->ring_role) {
+	case BR_MRP_RING_ROLE_MRM:
 		switch (type) {
 		case BR_MRP_TLV_HEADER_IN_TEST:
 		case BR_MRP_TLV_HEADER_IN_TOPO:
@@ -1689,7 +1690,8 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		default:
 			break;
 		}
-	else /* mrp->ring_role == BR_MRP_RING_ROLE_MRC */
+		break;
+	case BR_MRP_RING_ROLE_MRC:
 		switch (type) {
 		case BR_MRP_TLV_HEADER_OPTION:
 			if (!mrp->mra_support)
@@ -1719,8 +1721,13 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		default:
 			break;
 		}
+		break;
+	default:
+		pr_warn("alert! Ring role: %s", ring_role_str(mrp->ring_role));
+	}
 
-	if (mrp->in_role == BR_MRP_IN_ROLE_MIM)
+	switch (mrp->in_role) {
+	case BR_MRP_IN_ROLE_MIM:
 		switch (type) {
 		case BR_MRP_TLV_HEADER_IN_TOPO:
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
@@ -1733,7 +1740,8 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		default:
 			break;
 		}
-	else /* mrp->in_role == BR_MRP_RING_ROLE_MIC */
+		break;
+	case BR_MRP_IN_ROLE_MIC:
 		switch (type) {
 		case BR_MRP_TLV_HEADER_IN_TEST:
 			if (p == mrp->p_port) {
@@ -1758,6 +1766,12 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		default:
 			break;
 		}
+		break;
+	default:
+		if (mrp->i_port)
+			pr_warn("alert! In role: %s",
+					in_role_str(mrp->in_role));
+	}
 }
 
 static void mrp_process(struct mrp_port *p, unsigned char *buf,
