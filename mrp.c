@@ -51,18 +51,6 @@ static enum br_mrp_ring_role_type ring_role_int(char *arg)
 	return BR_MRP_RING_ROLE_DISABLED;
 }
 
-static char *ring_role_str(int ring_role)
-{
-	switch (ring_role) {
-	case BR_MRP_RING_ROLE_DISABLED: return "Disabled";
-	case BR_MRP_RING_ROLE_MRC: return "MRC";
-	case BR_MRP_RING_ROLE_MRM: return "MRM";
-	case BR_MRP_RING_ROLE_MRA: return "MRA";
-	default:
-		return "Unknown ring role";
-	}
-}
-
 static int valid_in_role(char *arg)
 {
 	if (strcmp(arg, "disabled") == 0 ||
@@ -81,17 +69,6 @@ static enum br_mrp_in_role_type in_role_int(char *arg)
 	if (strcmp(arg, "mim") == 0)
 		return BR_MRP_IN_ROLE_MIM;
 	return BR_MRP_IN_ROLE_DISABLED;
-}
-
-static char *in_role_str(int in_role)
-{
-	switch (in_role) {
-	case BR_MRP_IN_ROLE_DISABLED: return "Disabled";
-	case BR_MRP_IN_ROLE_MIC: return "MIC";
-	case BR_MRP_IN_ROLE_MIM: return "MIM";
-	default:
-		return "Unknown int role";
-	}
 }
 
 static int valid_in_mode(char *arg)

@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <linux/if_bridge.h>
 #include <linux/cfm_bridge.h>
+#include <linux/mrp_bridge.h>
 #include <asm/byteorder.h>
 #include <stdbool.h>
 
@@ -346,5 +347,31 @@ CTL_DECLARE(name)                                                \
         return r;                                            \
     }while(0)
 
+/*
+ * MRP specific
+ */
+
+static inline char *ring_role_str(enum br_mrp_ring_role_type ring_role)
+{
+        switch (ring_role) {
+        case BR_MRP_RING_ROLE_DISABLED: return "Disabled";
+        case BR_MRP_RING_ROLE_MRC: return "MRC";
+        case BR_MRP_RING_ROLE_MRM: return "MRM";
+        case BR_MRP_RING_ROLE_MRA: return "MRA";
+        default:
+                return "Unknown ring role";
+        }
+}
+
+static inline char *in_role_str(enum br_mrp_in_role_type in_role)
+{
+        switch (in_role) {
+        case BR_MRP_IN_ROLE_DISABLED: return "Disabled";
+        case BR_MRP_IN_ROLE_MIC: return "MIC";
+        case BR_MRP_IN_ROLE_MIM: return "MIM";
+        default:
+                return "Unknown int role";
+        }
+}
 
 #endif /* UTILS_H_ */
