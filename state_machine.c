@@ -1765,6 +1765,11 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		break;
 	case BR_MRP_IN_ROLE_MIC:
 		switch (type) {
+		/* The MIC shall forward MRP_InTest frames received on one ring
+		 * port to the other ring port and to the interconnection port,
+		 * and MRP_InTest frames received on the interconnection port to
+		 * both ring ports.
+		 */
 		case BR_MRP_TLV_HEADER_IN_TEST:
 			if (p == mrp->p_port) {
 				mrp_forward(mrp->s_port, fb);
@@ -1777,12 +1782,28 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 				mrp_forward(mrp->s_port, fb);
 			}
 			break;
-		case BR_MRP_TLV_HEADER_IN_TOPO:
+		/* The MIC shall forward MRP_InLinkChange frames received on
+		 * one ring port to the other ring port and vice versa, and
+		 * MRP_InLinkChange frames received on one of the ring ports to
+		 * the interconnection port.
+		 */
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+			if (p == mrp->p_port) {
+				mrp_forward(mrp->s_port, fb);
+				mrp_forward(mrp->i_port, fb);
+			} else if (p == mrp->s_port) {
+				mrp_forward(mrp->p_port, fb);
+                                mrp_forward(mrp->i_port, fb);
+			}
+			break;
+		/* Each MIC shall forward MRP_InTopologyChange frames received
+		 * on one ring port to the other ring port and vice versa.
+		 */
+		case BR_MRP_TLV_HEADER_IN_TOPO:
 			if (p == mrp->p_port)
 				mrp_forward(mrp->s_port, fb);
-			else /* mrp->s_port */
+			else if (p == mrp->s_port)
                                 mrp_forward(mrp->p_port, fb);
 			break;
 		default:
