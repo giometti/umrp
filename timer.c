@@ -217,7 +217,7 @@ static void mrp_in_test_expired(struct ev_loop *loop,
 			mrp_in_test_req(mrp, mrp->in_test_conf_interval);
 
 			mrp->in_transitions++;
-			mrp_set_mrm_state(mrp, MRP_MIM_STATE_CHK_IO);
+			mrp_set_mim_state(mrp, MRP_MIM_STATE_CHK_IO);
 		} else {
 			mrp->in_test_curr++;
 			mrp_in_test_req(mrp, mrp->in_test_conf_interval);
