@@ -19,7 +19,7 @@ volatile bool quit = false;
 
 static void usage(void)
 {
-	printf("Usage::\n"
+	printf("Usage:\n"
 	       " -h        print this message and exit\n"
 	       " -d        increase debugging level\n");
 }
