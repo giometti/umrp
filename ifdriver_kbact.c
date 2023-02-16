@@ -86,7 +86,16 @@ alias_ifdriver_set_ring_role(kbact_set_ring_role);
 
 int kbact_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
 {
-	BUG();
+	switch (role) {
+	case BR_MRP_IN_ROLE_MIM:
+		pr_debug("bridge: %s role: MIM", mrp->ifname);
+		break;
+	case BR_MRP_IN_ROLE_MIC:
+		pr_debug("bridge: %s role: MIC", mrp->ifname);
+		break;
+	default:
+               BUG();
+	}
 	return 0;
 }
 alias_ifdriver_set_in_role(kbact_set_in_role);
@@ -120,6 +129,10 @@ int kbact_init(void)
 				ether_ntoa((void *) mrp_test_dmac));
 	exec_cmd("cswtool -atuadd cpu %s 1 6 1\n",
 				ether_ntoa((void *) mrp_control_dmac));
+	exec_cmd("cswtool -atuadd cpu %s 1 6 1\n",
+				ether_ntoa((void *) mrp_itest_dmac));
+	exec_cmd("cswtool -atuadd cpu %s 1 6 1\n",
+				ether_ntoa((void *) mrp_icontrol_dmac));
 
         return 0;
 }
