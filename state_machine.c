@@ -2214,8 +2214,7 @@ static void mrp_mim_port_link(struct mrp_port *p, bool up)
 	}
 
 
-	pr_debug("%s: new mim_state: %s", __func__,
-	        mrp_get_mim_state(mrp->mim_state));
+	pr_debug("new mim_state: %s", mrp_get_mim_state(mrp->mim_state));
 }
 
 /* Represents the state machine for when MRP instance has the role MIC and the
