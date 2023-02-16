@@ -2407,6 +2407,7 @@ static void mrp_update_recovery(struct mrp *mrp,
 				enum mrp_in_recovery_type in_recv)
 {
 	mrp->ring_recv = ring_recv;
+	mrp->in_recv = in_recv;
 
 	switch (ring_recv) {
 	case MRP_RING_RECOVERY_500:
