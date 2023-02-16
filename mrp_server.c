@@ -21,6 +21,7 @@ static void usage(void)
 {
 	printf("Usage:\n"
 	       " -h        print this message and exit\n"
+	       " -v        print server version and exit\n"
 	       " -d        increase debugging level\n");
 }
 
@@ -57,11 +58,14 @@ int main(int argc, char *argv[])
 	int c;
 	int ret;
 
-	while ((c = getopt(argc, argv, "hd")) != -1) {
+	while ((c = getopt(argc, argv, "hvd")) != -1) {
 		switch (c) {
 		case 'd':
 			__debug_level++;
 			break;
+		case 'v':
+			pr_version();
+			return 0;
 		case 'h':
 			usage();
 			return 0;
