@@ -24,6 +24,11 @@ static void usage(void)
 	       " -d        increase debugging level\n");
 }
 
+static void pr_version(void)
+{
+	pr_info("UMRP ver. %s", VERSION);
+}
+
 static void handle_signal(int sig)
 {
 	ev_break(EV_DEFAULT, EVBREAK_ALL);;
@@ -77,7 +82,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	pr_info("UMRP ver. %s", VERSION);
+	pr_version();
 	ev_run(EV_DEFAULT, 0);
 
 	packet_socket_cleanup();
