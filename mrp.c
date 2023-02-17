@@ -559,6 +559,7 @@ static void help(void)
 		"Optional arguments:\n"
 		"  ring_recv       [recovery]    Ring recovery time(500,200,30,10)\n"
 		"  prio            [priority]    Instance priority\n"
+		"  react_on_link_change [status]    enable/disable property (1,0)\n"
 		"  in_role         [in_role]     Interconnect role(mim, mic)\n"
 		"  iport           [port]        Interconnect port name\n"
 		"  in_id           [in_id]       Interconnect ring id\n"
