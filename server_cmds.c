@@ -125,6 +125,8 @@ mrp_process:
 
 	if (tb[IFLA_OPERSTATE]) {
 		__u8 state = *(__u8*)RTA_DATA(tb[IFLA_OPERSTATE]);
+		pr_debug("port: %s, curr state: %d, new state: %d",
+			port->ifname, port->operstate, state);
 		if (port->operstate != state) {
 			port->operstate = state;
 
