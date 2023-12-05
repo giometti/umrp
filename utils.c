@@ -21,6 +21,63 @@
 
 static int netsock = 0;
 
+static bool time_is_before(struct timespec t0, int interval_s)
+{
+	struct timespec t;
+
+	clock_gettime(CLOCK_MONOTONIC, &t);
+
+	t0.tv_sec += interval_s;
+	if (t0.tv_sec == t.tv_sec)
+		return t0.tv_nsec < t.tv_nsec;
+	else
+		return t0.tv_sec < t.tv_sec;
+}
+
+/*
+ * __ratelimit - rate limiting
+ * @rs: ratelimit_state data
+ * @stream: output stream to be used
+ * @func: name of calling function
+ *
+ * This enforces a rate limit: not more than @rs->burst callbacks
+ * in every @rs->interval_s seconds.
+ * If @rs->interval_s is zero ratelimit is disabled.
+ *
+ * RETURNS:
+ * 'false' means callbacks will be suppressed.
+ * 'true' means go ahead and do it.
+ */
+bool ratelimit(struct ratelimit_state *rs, FILE *stream, const char *func)
+{
+        bool ret;
+
+        if (!rs->interval_s)
+                return true;
+
+        if (rs->begin.tv_sec == 0)
+		clock_gettime(CLOCK_MONOTONIC, &rs->begin);
+
+        if (time_is_before(rs->begin, rs->interval_s)) {
+                if (rs->missed) {
+			fprintf(stream, "[%s] %s: %d messages suppressed\n",
+					NAME, func, rs->missed);
+			rs->missed = 0;
+                }
+                clock_gettime(CLOCK_MONOTONIC, &rs->begin);
+                rs->printed = 0;
+        }
+        if (rs->burst && rs->burst > rs->printed) {
+                rs->printed++;
+                ret = true;
+        } else {
+                rs->missed++;
+                ret = false;
+        }
+
+        return ret;
+}
+
 int if_get_mac(int ifindex, unsigned char *mac)
 {
 	char name[IF_NAMESIZE];

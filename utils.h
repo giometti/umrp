@@ -28,6 +28,26 @@
 #define __stringify(s)          #s
 #define fallthrough		do {} while (0)
 
+#define DEFAULT_RATELIMIT_INTERVAL      5	/* seconds */
+#define DEFAULT_RATELIMIT_BURST         10
+
+struct ratelimit_state {
+        int interval_s;
+        int burst;
+        int printed;
+        int missed;
+	struct timespec begin;
+};
+#define RATELIMIT_STATE_INIT(__interval_s, __burst) {			\
+                .interval_s	= __interval_s,				\
+                .burst          = __burst,				\
+        }
+#define DEFINE_RATELIMIT_STATE(name, __interval_s, __burst)		\
+        struct ratelimit_state name =                                   \
+                RATELIMIT_STATE_INIT(__interval_s, __burst)
+extern bool ratelimit(struct ratelimit_state *rs, FILE *stream,
+						const char *func);
+
 extern int __debug_level;
 #define __message(stream, layout, fmt, args...)                         \
         do {                                                            \
@@ -59,6 +79,13 @@ extern int __debug_level;
                 __message(stderr, 0, fmt, ## args)
 #define pr_warn(fmt, args...)						\
                 __message(stderr, 0, fmt , ## args)
+#define pr_warn_ratelimit(fmt, args...) ({				\
+	static DEFINE_RATELIMIT_STATE(_rs,				\
+			DEFAULT_RATELIMIT_INTERVAL,			\
+			DEFAULT_RATELIMIT_BURST);			\
+	if (ratelimit(&_rs, stderr, __func__))				\
+                __message(stderr, 0, fmt , ## args);			\
+	})
 #define pr_info(fmt, args...)						\
                 __message(stdout, 0, fmt, ## args)
 #define pr_debug(fmt, args...)						\
