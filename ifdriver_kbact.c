@@ -144,6 +144,10 @@ void kbact_uninit(void)
 				ether_ntoa((void *) mrp_test_dmac));
 	exec_cmd("cswtool -atudel cpu %s\n",
                                ether_ntoa((void *) mrp_control_dmac));
+	exec_cmd("cswtool -atudel cpu %s\n",
+				ether_ntoa((void *) mrp_itest_dmac));
+	exec_cmd("cswtool -atudel cpu %s\n",
+                               ether_ntoa((void *) mrp_icontrol_dmac));
 
 	pclose(file);
 }
