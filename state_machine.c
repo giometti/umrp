@@ -2524,17 +2524,17 @@ static int mrp_port_init(uint32_t p_ifindex, struct mrp *mrp,
 {
 	struct mrp_port *port;
 
-	port = malloc(sizeof(struct mrp_port));
-	if (!port)
-		return -ENOMEM;
-
-	memset(port, 0x0, sizeof(struct mrp_port));
-
-	/* It is possible for port intdex to be 0. In case the interconnect port
-	 * is not set
+	/* In the case of no interconnection port we get p_ifindex == 0,
+	 * so just exit!
 	 */
 	if (p_ifindex == 0)
 		return 0;
+
+	/* ... otherwise allocate (and zeroed) the port data struct */
+	port = malloc(sizeof(struct mrp_port));
+	if (!port)
+		return -ENOMEM;
+	memset(port, 0x0, sizeof(struct mrp_port));
 
 	port->mrp = mrp;
 	port->ifindex = p_ifindex;
