@@ -1692,12 +1692,19 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
 		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
+			pr_debug("MRM IN_TEST|TOPO|LINK from %s port...",
+						mrp_get_port_role(p->role));
 			if (mrp->p_port->state != BR_MRP_PORT_STATE_BLOCKED &&
 			    mrp->s_port->state != BR_MRP_PORT_STATE_BLOCKED) {
-				if (p == mrp->p_port)
+				if (p == mrp->p_port) {
 					mrp_forward(mrp->s_port, fb);
-				else if (p == mrp->s_port)
+					pr_debug("forwarded to secondary port");
+				} else if (p == mrp->s_port) {
 					mrp_forward(mrp->p_port, fb);
+					pr_debug("forwarded to primary port");
+				} else {
+					pr_debug("not forwarded");
+				}
 			}
 			break;
 		default:
@@ -1733,11 +1740,20 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
 		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
+			pr_debug("MRM IN_TEST|TOPO|LINK from %s port...",
+						mrp_get_port_role(p->role));
 			if (mrp->in_role == BR_MRP_IN_ROLE_DISABLED) {
-				if (p == mrp->p_port)
+				if (p == mrp->p_port) {
 					mrp_forward(mrp->s_port, fb);
-				else if (p == mrp->s_port)
+					pr_debug("forwarded to secondary port");
+				} else if (p == mrp->s_port) {
 					mrp_forward(mrp->p_port, fb);
+					pr_debug("forwarded to primary port");
+				} else {
+					pr_debug("not forwarded");
+				}
+			} else {
+				pr_debug("not forwarded (MIM or MIC active)");
 			}
 			break;
 		default:
@@ -1761,10 +1777,17 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
 		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
-			if (p == mrp->p_port)
+			pr_debug("MIM IN_TOPO|LINK from %s port...",
+						mrp_get_port_role(p->role));
+			if (p == mrp->p_port) {
 				mrp_forward(mrp->s_port, fb);
-			else if (p == mrp->s_port)
+				pr_debug("forwarded to secondary port");
+			} else if (p == mrp->s_port) {
 				mrp_forward(mrp->p_port, fb);
+				pr_debug("forwarded to primary port");
+			} else {
+				pr_debug("not forwarded");
+			}
 			break;
 		default:
 			break;
@@ -1796,22 +1819,35 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		 */
 		case BR_MRP_TLV_HEADER_IN_LINK_UP:
 		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
+			pr_debug("MIC IN_LINK from %s port...",
+						mrp_get_port_role(p->role));
 			if (p == mrp->p_port) {
 				mrp_forward(mrp->s_port, fb);
 				mrp_forward(mrp->i_port, fb);
+				pr_debug("forwarded to secondary/inter ports");
 			} else if (p == mrp->s_port) {
 				mrp_forward(mrp->p_port, fb);
                                 mrp_forward(mrp->i_port, fb);
+				pr_debug("forwarded to primary/inter ports");
+			} else {
+				pr_debug("not forwarded");
 			}
 			break;
 		/* Each MIC shall forward MRP_InTopologyChange frames received
 		 * on one ring port to the other ring port and vice versa.
 		 */
 		case BR_MRP_TLV_HEADER_IN_TOPO:
-			if (p == mrp->p_port)
+			pr_debug("MIC IN_TOPO from %s port...",
+						mrp_get_port_role(p->role));
+			if (p == mrp->p_port) {
 				mrp_forward(mrp->s_port, fb);
-			else if (p == mrp->s_port)
+				pr_debug("forwarded to secondary port");
+			} else if (p == mrp->s_port) {
                                 mrp_forward(mrp->p_port, fb);
+				pr_debug("forwarded to primary port");
+			} else {
+				pr_debug("not forwarded");
+			}
 			break;
 		default:
 			break;
