@@ -84,6 +84,16 @@ static bool mrp_is_in_port(const struct mrp_port *p)
 	return p->role == BR_MRP_PORT_ROLE_INTER;
 }
 
+static char *mrp_get_port_role(enum br_mrp_port_role_type role)
+{
+        switch (role) {
+        case BR_MRP_PORT_ROLE_PRIMARY: return "primary";
+        case BR_MRP_PORT_ROLE_SECONDARY: return "secondary";
+        case BR_MRP_PORT_ROLE_INTER: return "inter";
+        default: return "Unknown port role";
+        }
+}
+
 /* Determins if a port is part of a MRP instance */
 static bool mrp_is_mrp_port(const struct mrp_port *p)
 {
