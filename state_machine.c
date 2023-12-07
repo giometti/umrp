@@ -926,7 +926,7 @@ out:
 /* Send MRP_IntLinkChange frames on all MRP ports */
 void mrp_in_link_req(struct mrp *mrp, bool up, uint32_t  interval)
 {
-	pr_debug("in_link_req up: %d interval: %d", up, interval);
+	pr_debug("up:%d, interval: %d", up, interval);
 
 	mrp_send_in_link(mrp->p_port, up, interval);
 	mrp_send_in_link(mrp->s_port, up, interval);
@@ -1094,8 +1094,7 @@ static void mrp_mra_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_ring_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("recv ring_topo, mrm state: %s",
-	        mrp_get_mrm_state(mrp->mrm_state));
+	pr_debug("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version, tlv and get ring topo header */
 	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
@@ -1445,7 +1444,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_in_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("recv in_topo, mic state: %s mrm state %s",
+	pr_debug("mic state: %s mrm state %s",
 	        mrp_get_mic_state(mrp->mic_state),
 	        mrp_get_mrm_state(mrp->mrm_state));
 
@@ -1497,8 +1496,7 @@ static void mrp_recv_in_link(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_tlv_hdr *tlv;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("recv in_link, mim state: %s",
-	        mrp_get_mim_state(mrp->mim_state));
+	pr_debug("mim state: %s", mrp_get_mim_state(mrp->mim_state));
 
 	/* remove MRP version to get the tlv */
 	buf += sizeof(int16_t);
@@ -1549,8 +1547,7 @@ static void mrp_recv_in_link_status(struct mrp_port *p, unsigned char *buf)
 	if (mrp->in_mode != MRP_IN_MODE_LC)
 		return;
 
-	pr_debug("recv in_link_status, mic state: %s",
-	        mrp_get_mic_state(mrp->mic_state));
+	pr_debug("mic state: %s", mrp_get_mic_state(mrp->mic_state));
 
 	/* remove MRP version, tlv and get in link status header */
 	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
