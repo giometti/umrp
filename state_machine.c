@@ -2310,8 +2310,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 		}
 	}
 
-	pr_debug("%s: new mic_state: %s", __func__,
-	        mrp_get_mic_state(mrp->mic_state));
+	pr_debug("new mic_state: %s", mrp_get_mic_state(mrp->mic_state));
 }
 
 /* Whenever the port link changes, this function is called */
@@ -2832,7 +2831,7 @@ int mrp_del(uint32_t br_ifindex, uint32_t ring_nr)
 
 	mrp = mrp_find(br_ifindex, ring_nr);
 	if (!mrp) {
-		pr_err("%s with invalid ring nr: %d", __func__, ring_nr);
+		pr_err("invalid ring nr: %d", ring_nr);
 		return -EINVAL;
 	}
 
