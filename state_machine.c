@@ -578,7 +578,7 @@ void mrp_ring_topo_send(struct mrp *mrp, uint32_t time)
  */
 void mrp_ring_topo_req(struct mrp *mrp, uint32_t time)
 {
-	pr_debug("topo_req: %d", time);
+	pr_debug("time: %d", time);
 
 	mrp_ring_topo_send(mrp, time * mrp->ring_topo_conf_max);
 
@@ -870,7 +870,7 @@ void mrp_in_topo_send(struct mrp *mrp, uint32_t interval)
  */
 void mrp_in_topo_req(struct mrp *mrp, uint32_t time)
 {
-	pr_debug("in_topo_reg: %d", time);
+	pr_debug("time: %d", time);
 
 	mrp_in_topo_send(mrp, time * mrp->in_topo_conf_max);
 
