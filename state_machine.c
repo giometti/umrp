@@ -1799,13 +1799,19 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 			}
 			break;
 		/* Each MIC shall forward MRP_InTopologyChange frames received
-		 * on one ring port to the other ring port and vice versa.
+		 * on one ring port to the other ring port and vice versa, and
+		 * MRP_InTopologyChange frames received on the interconnection
+		 * port to the ring ports.
 		 */
 		case BR_MRP_TLV_HEADER_IN_TOPO:
 			if (p == mrp->p_port)
 				mrp_forward(mrp->s_port, fb);
 			else if (p == mrp->s_port)
                                 mrp_forward(mrp->p_port, fb);
+			else /* mrp->i_port */ {
+				mrp_forward(mrp->p_port, fb);
+                                mrp_forward(mrp->s_port, fb);
+			}
 			break;
 		default:
 			break;
