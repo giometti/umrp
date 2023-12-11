@@ -1444,21 +1444,21 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_in_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("mic state: %s mrm state %s",
-	        mrp_get_mic_state(mrp->mic_state),
-	        mrp_get_mrm_state(mrp->mrm_state));
-
 	/* remove MRP version, tlv and get int topo change header */
 	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
 	hdr = (struct br_mrp_in_topo_hdr *)buf;
 
-	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM &&
-	    mrp->ring_topo_running == false) {
-		mrp_ring_topo_req(mrp, ntohs(hdr->interval) * 1000);
-		return;
+	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM) {
+		pr_debug("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
+		if (mrp->ring_topo_running == false) {
+			mrp_ring_topo_req(mrp, ntohs(hdr->interval) * 1000);
+			return;
+		}
 	}
 
 	if (mrp->in_role == BR_MRP_IN_ROLE_MIM) {
+		pr_debug("mim state: %s", mrp_get_mim_state(mrp->mim_state));
+
 		/* If MRP_SA == MRP_TS_SA ignore */
 		if (!ether_addr_equal(hdr->sa, mrp->macaddr))
 			return;
@@ -1467,6 +1467,8 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	}
 
 	if (mrp->in_role == BR_MRP_IN_ROLE_MIC) {
+		pr_debug("mic state: %s", mrp_get_mic_state(mrp->mic_state));
+
 		switch (mrp->mic_state) {
 		case MRP_MIC_STATE_AC_STAT1:
 			if (ntohs(hdr->id) == mrp->in_id)
