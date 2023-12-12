@@ -180,11 +180,15 @@ void mrp_in_topo_send(struct mrp *mrp, uint32_t interval);
 void mrp_in_link_req(struct mrp *mrp, bool up, uint32_t interval);
 void mrp_in_link_status_req(struct mrp *mrp, uint32_t interval);
 
+char *mrp_get_mrm_state(enum mrp_mrm_state_type state);
 void mrp_set_mrm_state(struct mrp *mrp, enum mrp_mrm_state_type state);
+char *mrp_get_mrc_state(enum mrp_mrc_state_type state);
 void mrp_set_mrc_state(struct mrp *mrp, enum mrp_mrc_state_type state);
 
 void mrp_set_mim_state(struct mrp *mrp, enum mrp_mim_state_type state);
+char *mrp_get_mim_state(enum mrp_mim_state_type state);
 void mrp_set_mic_state(struct mrp *mrp, enum mrp_mic_state_type state);
+char *mrp_get_mic_state(enum mrp_mic_state_type state);
 
 /* mrp_timer.c */
 void mrp_timer_init(struct mrp *mrp);

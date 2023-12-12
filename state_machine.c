@@ -100,7 +100,7 @@ static void mrp_reset_ring_state(struct mrp *mrp)
 	mrp->mrc_state = MRP_MRC_STATE_AC_STAT1;
 }
 
-static char *mrp_get_mrm_state(enum mrp_mrm_state_type state)
+char *mrp_get_mrm_state(enum mrp_mrm_state_type state)
 {
 	switch (state) {
 	case MRP_MRM_STATE_AC_STAT1: return "AC_STAT1";
@@ -111,7 +111,7 @@ static char *mrp_get_mrm_state(enum mrp_mrm_state_type state)
 	}
 }
 
-static char *mrp_get_mrc_state(enum mrp_mrc_state_type state)
+char *mrp_get_mrc_state(enum mrp_mrc_state_type state)
 {
 	switch (state) {
 	case MRP_MRC_STATE_AC_STAT1: return "AC_STAT1";
@@ -123,7 +123,7 @@ static char *mrp_get_mrc_state(enum mrp_mrc_state_type state)
 	}
 }
 
-static char *mrp_get_mim_state(enum mrp_mim_state_type state)
+char *mrp_get_mim_state(enum mrp_mim_state_type state)
 {
 	switch (state) {
 	case MRP_MIM_STATE_AC_STAT1: return "AC_STAT1";
@@ -133,7 +133,7 @@ static char *mrp_get_mim_state(enum mrp_mim_state_type state)
 	}
 }
 
-static char *mrp_get_mic_state(enum mrp_mic_state_type state)
+char *mrp_get_mic_state(enum mrp_mic_state_type state)
 {
 	switch (state) {
 	case MRP_MIC_STATE_AC_STAT1: return "AC_STAT1";
