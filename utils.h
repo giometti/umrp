@@ -58,20 +58,18 @@ extern int __debug_level;
                         fprintf(stream, "[%s] " fmt "\n", NAME, ## args);\
                         break;                                          \
                 case 1:                                                 \
-                        if (unlikely(__debug_level >= layout)) {        \
-                                fprintf(stream, "%ld.%09ld ",		\
-                                                t.tv_sec, t.tv_nsec);   \
-                                fprintf(stream, "[%s] %s: " fmt "\n",   \
-                                        NAME, __func__, ## args);       \
-                        }                                               \
+                        if (likely(__debug_level < layout))		\
+				break;					\
+			fprintf(stream, "%ld.%09ld ", t.tv_sec, t.tv_nsec);   \
+			fprintf(stream, "[%s] %s: " fmt "\n",		\
+				NAME, __func__, ## args);		\
                         break;                                          \
                 default:                                                \
-                        if (unlikely(__debug_level >= layout)) {        \
-                                fprintf(stream, "%ld.%09ld ",		\
-                                                t.tv_sec, t.tv_nsec);   \
-                                fprintf(stream, "[%s](%s@%d) %s: " fmt "\n",\
-                                        NAME, __FILE__, __LINE__, __func__, ## args);\
-                        }                                               \
+                        if (likely(__debug_level >= layout))		\
+				break;					\
+			fprintf(stream, "%ld.%09ld ",t.tv_sec, t.tv_nsec);   \
+			fprintf(stream, "[%s](%s@%d) %s: " fmt "\n",	\
+				NAME, __FILE__, __LINE__, __func__, ## args);\
                 }                                                       \
         } while (0)
 
