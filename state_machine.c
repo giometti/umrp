@@ -152,6 +152,7 @@ int mrp_set_ring_role(struct mrp *mrp, enum br_mrp_ring_role_type role)
         ret = ifdriver_set_ring_role(mrp, role);
 	if (ret)
 		pr_warn("cannot set state %d for bridge %s", role, mrp->ifname);
+	pr_debug("role: %s", ring_role_str(role));
 	return ret;
 }
 int mrp_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
@@ -163,6 +164,7 @@ int mrp_set_in_role(struct mrp *mrp, enum br_mrp_in_role_type role)
         ret = ifdriver_set_in_role(mrp, role);
 	if (ret)
 		pr_warn("cannot set state %d for bridge %s", role, mrp->ifname);
+	pr_debug("role: %s", in_role_str(role));
 	return ret;
 }
 
