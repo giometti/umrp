@@ -88,6 +88,13 @@ extern int __debug_level;
                 __message(stdout, 0, fmt, ## args)
 #define pr_debug(fmt, args...)						\
                 __message(stderr, 1, fmt, ## args)
+#define pr_debug_ratelimit(fmt, args...) ({				\
+	static DEFINE_RATELIMIT_STATE(_rs,				\
+			DEFAULT_RATELIMIT_INTERVAL,			\
+			DEFAULT_RATELIMIT_BURST);			\
+	if (ratelimit(&_rs, stderr, __func__))				\
+                __message(stderr, 1, fmt , ## args);			\
+	})
 #define pr_debug_v(fmt, args...)					\
                 __message(stderr, 2, fmt, ## args)
 
