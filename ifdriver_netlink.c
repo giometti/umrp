@@ -189,6 +189,7 @@ int netlink_init(void)
 		return EXIT_FAILURE;
 	}
 
+	pr_debug("netlink ifdriver done");
 	return 0;
 }
 alias_ifdriver_init(netlink_init);

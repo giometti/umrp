@@ -134,6 +134,7 @@ int kbact_init(void)
 	exec_cmd("cswtool -atuadd cpu %s 1 6 1\n",
 				ether_ntoa((void *) mrp_icontrol_dmac));
 
+	pr_debug("kbact ifdriver done");
         return 0;
 }
 alias_ifdriver_init(kbact_init);
