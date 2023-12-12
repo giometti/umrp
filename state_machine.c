@@ -2524,13 +2524,7 @@ static int mrp_port_init(uint32_t p_ifindex, struct mrp *mrp,
 {
 	struct mrp_port *port;
 
-	/* In the case of no interconnection port we get p_ifindex == 0,
-	 * so just exit!
-	 */
-	if (p_ifindex == 0)
-		return 0;
-
-	/* ... otherwise allocate (and zeroed) the port data struct */
+	/* Allocate (and zeroed) the port data struct */
 	port = malloc(sizeof(struct mrp_port));
 	if (!port)
 		return -ENOMEM;
@@ -2781,10 +2775,12 @@ int mrp_add(uint32_t br_ifindex, uint32_t ring_nr, uint32_t pport,
 		goto delete_port;
 	}
 
-	err = mrp_port_init(iport, mrp, BR_MRP_PORT_ROLE_INTER);
-	if (err < 0) {
-		pthread_mutex_unlock(&mrp->lock);
-		goto delete_ports;
+	if (iport > 0) {
+		err = mrp_port_init(iport, mrp, BR_MRP_PORT_ROLE_INTER);
+		if (err < 0) {
+			pthread_mutex_unlock(&mrp->lock);
+			goto delete_ports;
+		}
 	}
 
 	if (mrp->in_mode != MRP_IN_MODE_RC)
