@@ -88,7 +88,7 @@ extern int __debug_level;
                 __message(stdout, 0, fmt, ## args)
 #define pr_debug(fmt, args...)						\
                 __message(stderr, 1, fmt, ## args)
-#define pr_vdbg(fmt, args...)						\
+#define pr_debug_v(fmt, args...)					\
                 __message(stderr, 2, fmt, ## args)
 
 #define __CHECK(condition, do_exit)                                     \
