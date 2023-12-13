@@ -58,6 +58,7 @@ extern int __debug_level;
                         fprintf(stream, "[%s] " fmt "\n", NAME, ## args);\
                         break;                                          \
                 case 1:                                                 \
+                case 2:                                                 \
                         if (likely(__debug_level < layout))		\
 				break;					\
 			fprintf(stream, "%ld.%09ld ", t.tv_sec, t.tv_nsec);   \
