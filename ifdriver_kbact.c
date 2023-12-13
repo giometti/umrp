@@ -32,7 +32,7 @@ __printf(1, 2) static int exec_cmd(const char *fmt, ...)
         n = vasprintf(&cmd, fmt, args);
         va_end(args); 
 
-	pr_debug("executing: %s", cmd);
+	pr_debug_v("executing: %s", cmd);
         ret = fwrite(cmd, n, 1, file);
         free(cmd);
 

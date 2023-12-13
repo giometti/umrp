@@ -104,7 +104,7 @@ static void mrp_ring_topo_expired(struct ev_loop *loop,
 {
 	struct mrp *mrp = container_of(w, struct mrp, ring_topo_work);
 
-	pr_debug("ring_topo_curr_max: %d", mrp->ring_topo_curr_max);
+	pr_debug_v("ring_topo_curr_max: %d", mrp->ring_topo_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 
@@ -132,7 +132,7 @@ static void mrp_ring_link_up_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_debug("ring_link_curr_max: %d", mrp->ring_link_curr_max);
+	pr_debug_v("ring_link_curr_max: %d", mrp->ring_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 
@@ -165,7 +165,7 @@ static void mrp_ring_link_down_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_debug("ring_link_curr_max: %d", mrp->ring_link_curr_max);
+	pr_debug_v("ring_link_curr_max: %d", mrp->ring_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 
@@ -230,7 +230,7 @@ static void mrp_in_topo_expired(struct ev_loop *loop,
 {
 	struct mrp *mrp = container_of(w, struct mrp, in_topo_work);
 
-	pr_debug("in_topo_curr_max: %d", mrp->in_topo_curr_max);
+	pr_debug_v("in_topo_curr_max: %d", mrp->in_topo_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 
@@ -258,7 +258,7 @@ static void mrp_in_link_up_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_debug("in_link_curr_max: %d", mrp->in_link_curr_max);
+	pr_debug_v("in_link_curr_max: %d", mrp->in_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 
@@ -291,7 +291,7 @@ static void mrp_in_link_down_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_debug("in_link_curr_max: %d", mrp->in_link_curr_max);
+	pr_debug_v("in_link_curr_max: %d", mrp->in_link_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 
@@ -321,7 +321,7 @@ static void mrp_in_link_status_expired(struct ev_loop *loop,
 	uint32_t interval;
 	uint32_t delay;
 
-	pr_debug("in_link_status_curr_max: %d", mrp->in_link_status_curr_max);
+	pr_debug_v("in_link_status_curr_max: %d", mrp->in_link_status_curr_max);
 
 	pthread_mutex_lock(&mrp->lock);
 

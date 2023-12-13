@@ -1096,7 +1096,7 @@ static void mrp_mra_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_ring_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
+	pr_debug_v("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version, tlv and get ring topo header */
 	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
@@ -1117,7 +1117,7 @@ static void mrp_mrc_recv_ring_topo(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_ring_topo_hdr *hdr;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("port: %s, mrc state: %s", p->ifname,
+	pr_debug_v("port: %s, mrc state: %s", p->ifname,
 	        mrp_get_mrc_state(mrp->mrc_state));
 
 	/* remove MRP version, tlv and get ring topo header */
@@ -1171,7 +1171,7 @@ static void mrp_recv_ring_link(struct mrp_port *p, unsigned char *buf)
 	struct mrp *mrp = p->mrp;
 	struct br_mrp_tlv_hdr *tlv;
 
-	pr_debug("port: %s, mrm state: %s",
+	pr_debug_v("port: %s, mrm state: %s",
 	        p->ifname, mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version to get the tlv */
@@ -1373,7 +1373,7 @@ static void mrp_recv_option(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_sub_tlv_hdr *sub_tlv;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("port %s, mrm state: %s", p->ifname,
+	pr_debug_v("port %s, mrm state: %s", p->ifname,
 	        mrp_get_mrm_state(mrp->mrm_state));
 
 	/* remove MRP version to get the tlv */
@@ -1451,7 +1451,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	hdr = (struct br_mrp_in_topo_hdr *)buf;
 
 	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM) {
-		pr_debug("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
+		pr_debug_v("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
 		if (mrp->ring_topo_running == false) {
 			mrp_ring_topo_req(mrp, ntohs(hdr->interval) * 1000);
 			return;
@@ -1459,7 +1459,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	}
 
 	if (mrp->in_role == BR_MRP_IN_ROLE_MIM) {
-		pr_debug("mim state: %s", mrp_get_mim_state(mrp->mim_state));
+		pr_debug_v("mim state: %s", mrp_get_mim_state(mrp->mim_state));
 
 		/* If MRP_SA == MRP_TS_SA ignore */
 		if (!ether_addr_equal(hdr->sa, mrp->macaddr))
@@ -1469,7 +1469,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 	}
 
 	if (mrp->in_role == BR_MRP_IN_ROLE_MIC) {
-		pr_debug("mic state: %s", mrp_get_mic_state(mrp->mic_state));
+		pr_debug_v("mic state: %s", mrp_get_mic_state(mrp->mic_state));
 
 		switch (mrp->mic_state) {
 		case MRP_MIC_STATE_AC_STAT1:
@@ -1500,7 +1500,7 @@ static void mrp_recv_in_link(struct mrp_port *p, unsigned char *buf)
 	struct br_mrp_tlv_hdr *tlv;
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("mim state: %s", mrp_get_mim_state(mrp->mim_state));
+	pr_debug_v("mim state: %s", mrp_get_mim_state(mrp->mim_state));
 
 	/* remove MRP version to get the tlv */
 	buf += sizeof(int16_t);
@@ -1551,7 +1551,7 @@ static void mrp_recv_in_link_status(struct mrp_port *p, unsigned char *buf)
 	if (mrp->in_mode != MRP_IN_MODE_LC)
 		return;
 
-	pr_debug("mic state: %s", mrp_get_mic_state(mrp->mic_state));
+	pr_debug_v("mic state: %s", mrp_get_mic_state(mrp->mic_state));
 
 	/* remove MRP version, tlv and get in link status header */
 	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
@@ -2231,7 +2231,7 @@ static void mrp_mic_port_link(struct mrp_port *p, bool up)
 {
 	struct mrp *mrp = p->mrp;
 
-	pr_debug("up: %d, mic_state: %s",
+	pr_debug_v("up: %d, mic_state: %s",
 	        up, mrp_get_mic_state(mrp->mic_state));
 
 	if (up && mrp->in_mode == MRP_IN_MODE_RC) {
