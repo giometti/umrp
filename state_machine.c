@@ -2408,6 +2408,9 @@ void mrp_mac_change(uint32_t ifindex, unsigned char *mac)
  * on the each time updates all the configuration variables. The interval are
  * represented in us.
  */
+#define __us(v)		(v)
+#define __ms(v)		__us(v) * 1000
+#define __s(v)		__ms(v) * 1000
 static void mrp_update_recovery(struct mrp *mrp,
 				enum mrp_ring_recovery_type ring_recv,
 				enum mrp_in_recovery_type in_recv)
@@ -2417,99 +2420,115 @@ static void mrp_update_recovery(struct mrp *mrp,
 
 	switch (ring_recv) {
 	case MRP_RING_RECOVERY_500:
-		mrp->ring_topo_conf_interval = 20 * 1000;
+		mrp->ring_topo_conf_interval = __ms(20);
 		mrp->ring_topo_conf_max = 3;
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
-		mrp->ring_test_conf_short = 30 * 1000;
-		mrp->ring_test_conf_interval = 50 * 1000;
+		mrp->ring_test_conf_short = __ms(30);
+		mrp->ring_test_conf_interval = __ms(50);
 		mrp->ring_test_conf_max = 5;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
-		mrp->ring_link_conf_interval = 100 * 1000;
+		mrp->ring_link_conf_interval = __ms(100);
 		mrp->ring_link_conf_max = 4;
 		mrp->ring_link_curr_max = 0;
 		break;
 	case MRP_RING_RECOVERY_200:
-		mrp->ring_topo_conf_interval = 10 * 1000;
+		mrp->ring_topo_conf_interval = __ms(10);
 		mrp->ring_topo_conf_max = 3;
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
-		mrp->ring_test_conf_short = 10 * 1000;
-		mrp->ring_test_conf_interval = 20 * 1000;
+		mrp->ring_test_conf_short = __ms(10);
+		mrp->ring_test_conf_interval = __ms(20);
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
-		mrp->ring_link_conf_interval = 20 * 1000;
+		mrp->ring_link_conf_interval = __ms(20);
 		mrp->ring_link_conf_max = 4;
 		mrp->ring_link_curr_max = 0;
 		break;
 	case MRP_RING_RECOVERY_30:
-		mrp->ring_topo_conf_interval = 500;
+		mrp->ring_topo_conf_interval = __us(500);
 		mrp->ring_topo_conf_max = 3;
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
-		mrp->ring_test_conf_short = 1 * 1000;
-		mrp->ring_test_conf_interval = 3500;
+		mrp->ring_test_conf_short = __ms(1);
+		mrp->ring_test_conf_interval = __ms(3.5);
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
-		mrp->ring_link_conf_interval = 1 * 1000;
+		mrp->ring_link_conf_interval = __ms(1);
 		mrp->ring_link_conf_max = 4;
 		mrp->ring_link_curr_max = 0;
 		break;
 	case MRP_RING_RECOVERY_10:
-		mrp->ring_topo_conf_interval = 500;
+		mrp->ring_topo_conf_interval = __us(500);
 		mrp->ring_topo_conf_max = 3;
 		mrp->ring_topo_curr_max = mrp->ring_topo_conf_max - 1;
-		mrp->ring_test_conf_short = 500;
-		mrp->ring_test_conf_interval = 1000;
+		mrp->ring_test_conf_short = __us(500);
+		mrp->ring_test_conf_interval = __ms(1);
 		mrp->ring_test_conf_max = 3;
 		mrp->ring_test_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_mon_curr_max = mrp->ring_test_conf_max;
 		mrp->ring_test_conf_ext_max = 15;
-		mrp->ring_link_conf_interval = 1 * 1000;
+		mrp->ring_link_conf_interval = __ms(1);
 		mrp->ring_link_conf_max = 4;
 		mrp->ring_link_curr_max = 0;
 		break;
 	default:
 		break;
 	}
+	pr_debug("ring_topo_conf_interval: %dus", mrp->ring_topo_conf_interval);
+	pr_debug("ring_topo_conf_max:      %d", mrp->ring_topo_conf_max);
+	pr_debug("ring_test_conf_short:    %dus", mrp->ring_test_conf_short);
+	pr_debug("ring_test_conf_interval: %dus", mrp->ring_test_conf_interval);
+	pr_debug("ring_test_conf_max:      %d", mrp->ring_test_conf_max);
+	pr_debug("ring_test_conf_ext_max:  %d", mrp->ring_test_conf_ext_max);
+	pr_debug("ring_link_conf_interval: %dus", mrp->ring_link_conf_interval);
+	pr_debug("ring_link_conf_max:      %d", mrp->ring_link_conf_max);
 
 	switch (in_recv) {
 	case MRP_IN_RECOVERY_500:
-		mrp->in_topo_conf_interval = 20 * 1000;
+		mrp->in_topo_conf_interval = __ms(20);
 		mrp->in_topo_conf_max = 3;
 		mrp->in_topo_curr_max = mrp->in_topo_conf_max - 1;
-		mrp->in_test_conf_interval = 50 * 1000;
+		mrp->in_test_conf_interval = __ms(50);
 		mrp->in_test_conf_max = 8;
 		mrp->in_test_curr_max = mrp->in_test_conf_max;
-		mrp->in_link_conf_interval = 20 * 1000;
+		mrp->in_link_conf_interval = __ms(20);
 		mrp->in_link_conf_max = 4;
 		mrp->in_link_curr_max = 0;
-		mrp->in_link_status_conf_interval = 20 * 1000;
+		mrp->in_link_status_conf_interval = __ms(20);
 		mrp->in_link_status_conf_max = 8;
 		mrp->in_link_status_curr_max = 0;
-		mrp->cfm_ccm_period = 10000 * 1000;
+		mrp->cfm_ccm_period = __s(10);
 		break;
 	case MRP_IN_RECOVERY_200:
-		mrp->in_topo_conf_interval = 10 * 1000;
+		mrp->in_topo_conf_interval = __ms(10);
 		mrp->in_topo_conf_max = 3;
 		mrp->in_topo_curr_max = mrp->in_topo_conf_max - 1;
-		mrp->in_test_conf_interval = 20 * 1000;
+		mrp->in_test_conf_interval = __ms(20);
 		mrp->in_test_conf_max = 8;
 		mrp->in_test_curr_max = mrp->in_test_conf_max;
-		mrp->in_link_conf_interval = 20 * 1000;
+		mrp->in_link_conf_interval = __ms(20);
 		mrp->in_link_conf_max = 4;
 		mrp->in_link_curr_max = 0;
-		mrp->in_link_status_conf_interval = 20 * 1000;
+		mrp->in_link_status_conf_interval = __ms(20);
 		mrp->in_link_status_conf_max = 8;
 		mrp->in_link_status_curr_max = 0;
-		mrp->cfm_ccm_period = 10000 * 1000;
+		mrp->cfm_ccm_period = __s(10);
 		break;
 	default:
 		break;
 	}
+	pr_debug("in_topo_conf_interval:   %dus", mrp->in_topo_conf_interval);
+	pr_debug("in_topo_conf_max:        %d", mrp->in_topo_conf_max);
+	pr_debug("in_test_conf_interval:   %dus", mrp->in_test_conf_interval);
+	pr_debug("in_test_conf_max:        %d", mrp->in_test_conf_max);
+	pr_debug("in_link_conf_interval:   %dus", mrp->in_link_conf_interval);
+	pr_debug("in_link_status_conf_int.:%d", mrp->in_link_status_conf_interval);
+	pr_debug("in_link_status_conf_max: %d", mrp->in_link_status_conf_max);
+	pr_debug("cfm_ccm_period: %d", mrp->cfm_ccm_period);
 }
 
 struct mrp *mrp_find(uint32_t br_ifindex, uint32_t ring_nr)
