@@ -16,13 +16,16 @@
 
 int __debug_level;
 volatile bool quit = false;
+unsigned int time_factor = 1;
 
 static void usage(void)
 {
 	printf("Usage:\n"
 	       " -h        print this message and exit\n"
 	       " -v        print server version and exit\n"
-	       " -d        increase debugging level\n");
+	       " -d        increase debugging level\n"
+	       " -T <val>  use <val> as time factor to increase MRP timings " \
+			"(for debugging ONLY!)\n");
 }
 
 static void pr_version(void)
@@ -58,8 +61,15 @@ int main(int argc, char *argv[])
 	int c;
 	int ret;
 
-	while ((c = getopt(argc, argv, "hvd")) != -1) {
+	while ((c = getopt(argc, argv, "hvdT:")) != -1) {
 		switch (c) {
+		case 'T':
+			time_factor = atoi(optarg);
+			if (time_factor <= 0) {
+				pr_err("invalid value for -T option argument");
+				exit(EXIT_FAILURE);
+			}
+			break;
 		case 'd':
 			__debug_level++;
 			break;
@@ -74,6 +84,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	}
+	pr_debug("time_factor: %d", time_factor);
 
 	ret = ctl_socket_init();
 	if (ret < 0) {

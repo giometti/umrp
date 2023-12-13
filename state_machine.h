@@ -20,6 +20,8 @@
 #include "linux.h"
 #include "utils.h"
 
+extern unsigned int time_factor;
+
 extern const uint8_t mrp_test_dmac[ETH_ALEN];
 extern const uint8_t mrp_control_dmac[ETH_ALEN];
 extern const uint8_t mrp_itest_dmac[ETH_ALEN];

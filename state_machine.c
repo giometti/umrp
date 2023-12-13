@@ -2478,6 +2478,10 @@ static void mrp_update_recovery(struct mrp *mrp,
 	default:
 		break;
 	}
+	mrp->ring_topo_conf_interval *= time_factor;
+	mrp->ring_test_conf_short *= time_factor;
+	mrp->ring_test_conf_interval *= time_factor;
+	mrp->ring_link_conf_interval *= time_factor;
 	pr_debug("ring_topo_conf_interval: %dus", mrp->ring_topo_conf_interval);
 	pr_debug("ring_topo_conf_max:      %d", mrp->ring_topo_conf_max);
 	pr_debug("ring_test_conf_short:    %dus", mrp->ring_test_conf_short);
@@ -2521,6 +2525,10 @@ static void mrp_update_recovery(struct mrp *mrp,
 	default:
 		break;
 	}
+	mrp->in_topo_conf_interval *= time_factor;
+	mrp->in_test_conf_interval *= time_factor;
+	mrp->in_link_conf_interval *= time_factor;
+	mrp->in_link_status_conf_interval *= time_factor;
 	pr_debug("in_topo_conf_interval:   %dus", mrp->in_topo_conf_interval);
 	pr_debug("in_topo_conf_max:        %d", mrp->in_topo_conf_max);
 	pr_debug("in_test_conf_interval:   %dus", mrp->in_test_conf_interval);
