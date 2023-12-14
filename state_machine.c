@@ -1452,10 +1452,8 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 
 	if (mrp->ring_role == BR_MRP_RING_ROLE_MRM) {
 		pr_debug_v("mrm state: %s", mrp_get_mrm_state(mrp->mrm_state));
-		if (mrp->ring_topo_running == false) {
+		if (mrp->ring_topo_running == false)
 			mrp_ring_topo_req(mrp, ntohs(hdr->interval) * 1000);
-			return;
-		}
 	}
 
 	if (mrp->in_role == BR_MRP_IN_ROLE_MIM) {
