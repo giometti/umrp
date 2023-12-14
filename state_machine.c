@@ -1460,7 +1460,7 @@ static void mrp_recv_in_topo(struct mrp_port *p, unsigned char *buf)
 		pr_debug_v("mim state: %s", mrp_get_mim_state(mrp->mim_state));
 
 		/* If MRP_SA == MRP_TS_SA ignore */
-		if (!ether_addr_equal(hdr->sa, mrp->macaddr))
+		if (ether_addr_equal(hdr->sa, mrp->macaddr))
 			return;
 
 		mrp_clear_fdb_start(mrp, ntohs(hdr->interval) * 1000);
