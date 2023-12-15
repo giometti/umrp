@@ -1663,6 +1663,30 @@ static bool mrp_should_process(const struct mrp_port *p,
 	return false;
 }
 
+static bool mrp_is_ring_frame(enum br_mrp_tlv_header_type type)
+{
+        if (type == BR_MRP_TLV_HEADER_RING_TEST ||
+            type == BR_MRP_TLV_HEADER_RING_TOPO ||
+            type == BR_MRP_TLV_HEADER_RING_LINK_DOWN ||
+            type == BR_MRP_TLV_HEADER_RING_LINK_UP ||
+            type == BR_MRP_TLV_HEADER_OPTION)
+                return true;
+
+        return false;
+}
+
+static bool mrp_is_in_frame(enum br_mrp_tlv_header_type type)
+{
+        if (type == BR_MRP_TLV_HEADER_IN_TEST ||
+            type == BR_MRP_TLV_HEADER_IN_TOPO ||
+            type == BR_MRP_TLV_HEADER_IN_LINK_DOWN ||
+            type == BR_MRP_TLV_HEADER_IN_LINK_UP ||
+            type == BR_MRP_TLV_HEADER_IN_LINK_STATUS)
+                return true;
+
+        return false;
+}
+
 /* Check if the MRP frame needs to be forwarded and, if so, forward the frame.
  *
  * It depends of the MRP instance role and the frame type if the frame needs to
@@ -1673,156 +1697,158 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 				  enum br_mrp_tlv_header_type type)
 {
 	struct mrp *mrp = p->mrp;
+	struct mrp_port *forward_p_port = NULL;
+	struct mrp_port *forward_s_port = NULL;
+	struct mrp_port *forward_i_port = NULL;
 
-	switch (mrp->ring_role) {
-	case BR_MRP_RING_ROLE_MRM:
-		switch (type) {
-		/* The MRM shall not forward MRP_InTest frames,
-		 * MRP_InLinkChange frames, MRP_InLinkStatusPoll frames and
-		 * MRP_InTopologyChange frames between its ring ports, if one
-		 * of its ring port is in the port state BLOCKED.
-		 */
-		case BR_MRP_TLV_HEADER_IN_TEST:
-		case BR_MRP_TLV_HEADER_IN_TOPO:
-		case BR_MRP_TLV_HEADER_IN_LINK_UP:
-		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
-		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
-			if (mrp->p_port->state != BR_MRP_PORT_STATE_BLOCKED &&
-			    mrp->s_port->state != BR_MRP_PORT_STATE_BLOCKED) {
-				if (p == mrp->p_port)
-					mrp_forward(mrp->s_port, fb);
-				else if (p == mrp->s_port)
-					mrp_forward(mrp->p_port, fb);
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	case BR_MRP_RING_ROLE_MRC:
-		switch (type) {
-		case BR_MRP_TLV_HEADER_OPTION:
-			if (!mrp->mra_support)
-				break;
-			fallthrough;
-		/* The MRC shall forward MRP_Test frames, MRP_LinkChange frames
-		 * and MRP_TopologyChange frames received on one ring port to
-		 * the other ring port and vice versa.
-		 */
-		case BR_MRP_TLV_HEADER_RING_TEST:
-		case BR_MRP_TLV_HEADER_RING_LINK_DOWN:
-		case BR_MRP_TLV_HEADER_RING_LINK_UP:
-		case BR_MRP_TLV_HEADER_RING_TOPO:
-			if (p == mrp->p_port)
-				mrp_forward(mrp->s_port, fb);
-			else if (p == mrp->s_port)
-                                mrp_forward(mrp->p_port, fb);
-			break;
-		/* The MRC shall forward MRP_InTest frames, MRP_InLinkChange
-		 * frames, MRP_InTopologyChange frames and MRP_InLinkStatusPoll
-		 * frames between its ring ports, if no MIM and no MIC is active
-		 * on the node at the same time.
-		 */
-		case BR_MRP_TLV_HEADER_IN_TEST:
-		case BR_MRP_TLV_HEADER_IN_TOPO:
-		case BR_MRP_TLV_HEADER_IN_LINK_UP:
-		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
-		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
-			if (mrp->in_role == BR_MRP_IN_ROLE_DISABLED) {
-				if (p == mrp->p_port)
-					mrp_forward(mrp->s_port, fb);
-				else if (p == mrp->s_port)
-					mrp_forward(mrp->p_port, fb);
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		pr_warn("alert! Ring role: %s", ring_role_str(mrp->ring_role));
+	/* Set the possible forwarding ways according to the receiving port */
+	if (p == mrp->p_port) {
+		forward_s_port = mrp->s_port;
+		forward_i_port = mrp->i_port;
+	} else if (p == mrp->s_port) {
+		forward_p_port = mrp->p_port;
+		forward_i_port = mrp->i_port;
+	} else if (p == mrp->i_port) {
+		forward_p_port = mrp->p_port;
+		forward_s_port = mrp->s_port;
 	}
 
-	switch (mrp->in_role) {
-	case BR_MRP_IN_ROLE_MIM:
-		switch (type) {
-		/* The MIM shall forward MRP_InLinkChange frames,
-		 * MRP_InLinkStatusPoll frames and MRP_InTopologyChange frames
-		 * received on one ring port to the other ring port and vice
-		 * versa, if these frames are not received at its
+        if (mrp_is_ring_frame(type)) {
+		/* We should not forward ring frames received from the
 		 * interconnection port.
 		 */
-		case BR_MRP_TLV_HEADER_IN_TOPO:
-		case BR_MRP_TLV_HEADER_IN_LINK_UP:
-		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
-		case BR_MRP_TLV_HEADER_IN_LINK_STATUS:
-			if (p == mrp->p_port)
-				mrp_forward(mrp->s_port, fb);
-			else if (p == mrp->s_port)
-				mrp_forward(mrp->p_port, fb);
-			break;
+		if (p == mrp->i_port)
+			return;
+
+		/* If the frame is a ring frame then it should not be forwarded
+		 * to the interconnection port.
+		 */
+		forward_i_port = NULL;
+
+		switch (mrp->ring_role) {
+		case BR_MRP_RING_ROLE_MRM:
+			/* If the role is MRM then don't forward the frames */
+			return;
+
+		case BR_MRP_RING_ROLE_MRC:
+			/* If the role is MRC and MRA support is not enabled
+			 * then don't forward Header Option frames.
+			 */
+			if (type == BR_MRP_TLV_HEADER_OPTION &&
+			    !mrp->mra_support)
+				return;
+			goto forward;
+
 		default:
 			break;
 		}
-		break;
-	case BR_MRP_IN_ROLE_MIC:
-		switch (type) {
-		/* The MIC shall forward MRP_InTest frames received on one ring
-		 * port to the other ring port and to the interconnection port,
-		 * and MRP_InTest frames received on the interconnection port to
-		 * both ring ports.
-		 */
-		case BR_MRP_TLV_HEADER_IN_TEST:
-			if (p == mrp->p_port) {
-				mrp_forward(mrp->s_port, fb);
-				mrp_forward(mrp->i_port, fb);
-			} else if (p == mrp->s_port) {
-                                mrp_forward(mrp->p_port, fb);
-				mrp_forward(mrp->i_port, fb);
-			} else /* mrp->i_port */ {
-                                mrp_forward(mrp->p_port, fb);
-				mrp_forward(mrp->s_port, fb);
-			}
-			break;
-		/* The MIC shall forward MRP_InLinkChange frames received on
-		 * one ring port to the other ring port and vice versa, and
-		 * MRP_InLinkChange frames received on one of the ring ports to
-		 * the interconnection port.
-		 */
-		case BR_MRP_TLV_HEADER_IN_LINK_UP:
-		case BR_MRP_TLV_HEADER_IN_LINK_DOWN:
-			if (p == mrp->p_port) {
-				mrp_forward(mrp->s_port, fb);
-				mrp_forward(mrp->i_port, fb);
-			} else if (p == mrp->s_port) {
-				mrp_forward(mrp->p_port, fb);
-                                mrp_forward(mrp->i_port, fb);
-			}
-			break;
-		/* Each MIC shall forward MRP_InTopologyChange frames received
-		 * on one ring port to the other ring port and vice versa, and
-		 * MRP_InTopologyChange frames received on the interconnection
-		 * port to the ring ports.
-		 */
-		case BR_MRP_TLV_HEADER_IN_TOPO:
-			if (p == mrp->p_port)
-				mrp_forward(mrp->s_port, fb);
-			else if (p == mrp->s_port)
-                                mrp_forward(mrp->p_port, fb);
-			else /* mrp->i_port */ {
-				mrp_forward(mrp->p_port, fb);
-                                mrp_forward(mrp->s_port, fb);
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		if (mrp->i_port)
-			pr_warn("alert! In role: %s",
-					in_role_str(mrp->in_role));
 	}
+
+        if (mrp_is_in_frame(type)) {
+		switch (mrp->ring_role) {
+		case BR_MRP_RING_ROLE_MRM:
+			/* Nodes that behaves as MRM needs to stop forwarding
+			 * the frames in case the ring is closed, otherwise will			 * be a loop.
+			 * In this case the frame is no forward between the
+			 * ring ports, but the frame may still have a chance to
+			 * go to through the interconnection port!
+			 */
+			if ((mrp->p_port->state !=
+					BR_MRP_PORT_STATE_FORWARDING ||
+			     mrp->s_port->state !=
+					BR_MRP_PORT_STATE_FORWARDING) &&
+			    mrp_is_ring_port(p)) {
+				forward_p_port = NULL;
+				forward_s_port = NULL;
+			}
+			break;
+
+		case BR_MRP_RING_ROLE_MRC:
+			/* A node that behaves as MRC should not forward
+			 * interconnect frames between its ring ports if
+			 * it has an interconnection roles (MIM or MIC).
+			 */
+			if ((mrp->in_role != BR_MRP_IN_ROLE_DISABLED) &&
+			    mrp_is_ring_port(p)) {
+				forward_p_port = NULL;
+				forward_s_port = NULL;
+			}
+			break;
+
+		default:
+			break;
+		}
+
+		switch (mrp->in_role) {
+		case BR_MRP_IN_ROLE_MIM:
+			if (type == BR_MRP_TLV_HEADER_IN_TEST) {
+				/* MIM should not forward InTest frames. */
+				return;
+			} else {
+                                /* MIM should forward IntLinkChange/Status and
+                                 * IntTopoChange between ring ports, but MIM
+                                 * should not forward IntLinkChange/Status and
+                                 * IntTopoChange if the frame was received at
+                                 * the interconnect port
+                                 */
+                                if (mrp_is_ring_port(p))
+                                        forward_i_port = NULL;
+
+                                if (mrp_is_in_port(p))
+                                        return;
+			}
+			break;
+
+		case BR_MRP_IN_ROLE_MIC:
+                        /* MIC should forward InTest frames on all ports
+                         * regardless of the received port
+                         */
+			if (type == BR_MRP_TLV_HEADER_IN_TEST)
+                                goto forward;
+
+                        /* MIC should forward IntLinkChange frames only if they
+                         * are received on ring ports to all the ports
+                         */
+			if ((type == BR_MRP_TLV_HEADER_IN_LINK_UP ||
+			     type == BR_MRP_TLV_HEADER_IN_LINK_DOWN) &&
+			    mrp_is_ring_port(p))
+				goto forward;
+
+                        /* MIC should forward IntLinkStatus frames only to
+                         * interconnect port if it was received on a ring port.
+                         * If it is received on interconnect port then, it
+                         * should be forward on both ring ports
+                         */
+			if (type == BR_MRP_TLV_HEADER_IN_LINK_STATUS &&
+			    mrp_is_ring_port(p)) {
+				forward_p_port = NULL;
+				forward_s_port = NULL;
+				goto forward;
+			}
+
+                        /* Should forward the InTopo frames only between the
+                         * ring ports
+                         */
+			if (type == BR_MRP_TLV_HEADER_IN_TOPO) {
+				forward_i_port = NULL;
+				goto forward;
+			}
+
+			/* Otherwise don't forward the frames */
+			return;
+
+		default:
+			break;
+		}
+	}
+
+forward:
+	if (forward_p_port)
+		mrp_forward(forward_p_port, fb);
+	if (forward_s_port)
+		mrp_forward(forward_s_port, fb);
+	if (forward_i_port)
+		mrp_forward(forward_i_port, fb);
 }
 
 static void mrp_process(struct mrp_port *p, unsigned char *buf,
