@@ -1392,7 +1392,8 @@ static void mrp_recv_option(struct mrp_port *p, unsigned char *buf)
 
 static void mrp_mim_recv_in_test(struct mrp *mrp)
 {
-	if (mrp->mim_state == MRP_MIM_STATE_AC_STAT1) {
+	switch (mrp->mim_state) {
+	case MRP_MIM_STATE_AC_STAT1:
 		mrp_port_set_state(mrp->i_port,
 					   BR_MRP_PORT_STATE_BLOCKED);
 
@@ -1402,9 +1403,8 @@ static void mrp_mim_recv_in_test(struct mrp *mrp)
 		mrp_in_test_req(mrp, mrp->in_test_conf_interval);
 
 		mrp_set_mim_state(mrp, MRP_MIM_STATE_CHK_IC);
-	}
-
-	if (mrp->mim_state == MRP_MIM_STATE_CHK_IO) {
+		break;
+	case MRP_MIM_STATE_CHK_IO:
 		mrp_port_set_state(mrp->i_port,
 					   BR_MRP_PORT_STATE_BLOCKED);
 
@@ -1415,11 +1415,14 @@ static void mrp_mim_recv_in_test(struct mrp *mrp)
 		mrp_in_test_req(mrp, mrp->in_test_conf_interval);
 
 		mrp_set_mim_state(mrp, MRP_MIM_STATE_CHK_IC);
-	}
-
-	if (mrp->mim_state == MRP_MIM_STATE_CHK_IC) {
+		break;
+	case MRP_MIM_STATE_CHK_IC:
 		mrp->in_test_curr_max = mrp->in_test_conf_max - 1;
 		mrp->in_test_curr = 0;
+		break;
+	default:
+		break;
+		/* Ignore */
 	}
 }
 
