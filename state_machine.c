@@ -374,6 +374,15 @@ static uint16_t mrp_next_seq(struct mrp *mrp)
 	return mrp->seq_id;
 }
 
+/* Returns the MRP_TLVHeader */
+static struct br_mrp_tlv_hdr *mrp_get_tlv_hdr(unsigned char *buf)
+{
+	/* First 2 bytes in each MRP frame is the version and after that
+	 * is the tlv header, therefor skip the version
+	 */
+	return (struct br_mrp_tlv_hdr *) (buf + sizeof(uint16_t));
+}
+
 /* Allocates MRP frame and set head part of the frames. This is the ethernet
  * and the MRP version
  */
@@ -1913,15 +1922,6 @@ static void mrp_process_frame(struct mrp_port *port, struct frame_buf *fb,
 	}
 
 	pthread_mutex_unlock(&mrp->lock);
-}
-
-/* Returns the MRP_TLVHeader */
-static struct br_mrp_tlv_hdr *mrp_get_tlv_hdr(unsigned char *buf)
-{
-	/* First 2 bytes in each MRP frame is the version and after that
-	 * is the tlv header, therefor skip the version
-	 */
-	return (struct br_mrp_tlv_hdr *) (buf + sizeof(uint16_t));
 }
 
 /* Receives all MRP frames and add them in a queue to be processed */
