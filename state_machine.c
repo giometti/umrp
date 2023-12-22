@@ -1916,24 +1916,21 @@ static void mrp_process_frame(struct mrp_port *port, struct frame_buf *fb,
 }
 
 /* Returns the MRP_TLVHeader */
-static enum br_mrp_tlv_header_type mrp_get_tlv_hdr(unsigned char *buf)
+static struct br_mrp_tlv_hdr *mrp_get_tlv_hdr(unsigned char *buf)
 {
-	struct br_mrp_tlv_hdr *hdr;
-
 	/* First 2 bytes in each MRP frame is the version and after that
 	 * is the tlv header, therefor skip the version
 	 */
-	hdr = (struct br_mrp_tlv_hdr *)(buf + sizeof(uint16_t));
-	return hdr->type;
+	return (struct br_mrp_tlv_hdr *) (buf + sizeof(uint16_t));
 }
 
 /* Receives all MRP frames and add them in a queue to be processed */
 int mrp_recv(unsigned char *buf, int buf_len, struct sockaddr_ll *sl,
 	     socklen_t salen)
 {
-	enum br_mrp_tlv_header_type type;
 	struct mrp_port *port;
 	struct frame_buf fb;
+	struct br_mrp_tlv_hdr *hdr;
 
 	port = mrp_get_port(sl->sll_ifindex);
 	if (!port)
@@ -1949,12 +1946,12 @@ int mrp_recv(unsigned char *buf, int buf_len, struct sockaddr_ll *sl,
 	fb.size = buf_len;
 	fb.data += sizeof(struct ethhdr);
 
-	type = mrp_get_tlv_hdr(fb.data);
+	hdr = mrp_get_tlv_hdr(fb.data);
 
-	if (mrp_should_drop(port, type))
+	if (mrp_should_drop(port, hdr->type))
 		goto out;
 
-	mrp_process_frame(port, &fb, type);
+	mrp_process_frame(port, &fb, hdr->type);
 
 out:
 	return 0;
