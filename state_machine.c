@@ -383,6 +383,14 @@ static struct br_mrp_tlv_hdr *mrp_get_tlv_hdr(unsigned char *buf)
 	return (struct br_mrp_tlv_hdr *) (buf + sizeof(uint16_t));
 }
 
+/* Returns the MRP_InTestHeader */
+static struct br_mrp_in_test_hdr *mrp_get_in_test_hdr(unsigned char *buf)
+{
+	/* Remove MRP version, tlv header and get InTest header */
+	buf += sizeof(int16_t) + sizeof(struct br_mrp_tlv_hdr);
+	return (struct br_mrp_in_test_hdr *) buf;
+}
+
 /* Allocates MRP frame and set head part of the frames. This is the ethernet
  * and the MRP version
  */
@@ -1754,6 +1762,8 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 	}
 
         if (mrp_is_in_frame(type)) {
+		struct br_mrp_in_test_hdr *hdr = mrp_get_in_test_hdr(fb->data);
+
 		switch (mrp->ring_role) {
 		case BR_MRP_RING_ROLE_MRM:
 			/* Nodes that behaves as MRM needs to stop forwarding
@@ -1791,8 +1801,20 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		switch (mrp->in_role) {
 		case BR_MRP_IN_ROLE_MIM:
 			if (type == BR_MRP_TLV_HEADER_IN_TEST) {
-				/* MIM should not forward InTest frames. */
-				return;
+                                /* MIM should not forward it's own InTest
+                                 * frames between its ports, but it should
+				 * forward others InTest frames between its
+				 * ring ports if they are not from the
+				 * interconnection port.
+                                 */
+				if (ether_addr_equal(hdr->sa, mrp->macaddr))
+					return;
+				else {
+	                                if (mrp_is_in_port(p))
+	                                        return;
+					else
+	                                        forward_i_port = NULL;
+				}
 			} else {
                                 /* MIM should forward IntLinkChange/Status and
                                  * IntTopoChange between ring ports, but MIM
