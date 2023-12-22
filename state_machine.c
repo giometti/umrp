@@ -1785,9 +1785,11 @@ static void mrp_check_and_forward(const struct mrp_port *p,
 		case BR_MRP_RING_ROLE_MRC:
 			/* A node that behaves as MRC should not forward
 			 * interconnect frames between its ring ports if
-			 * it has an interconnection roles (MIM or MIC).
+			 * it has an interconnection roles (MIM or MIC)
+			 * that matches the frame interconnection ID.
 			 */
 			if ((mrp->in_role != BR_MRP_IN_ROLE_DISABLED) &&
+			    (mrp->in_id == ntohs(hdr->id)) &&
 			    mrp_is_ring_port(p)) {
 				forward_p_port = NULL;
 				forward_s_port = NULL;
