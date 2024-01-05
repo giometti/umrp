@@ -168,6 +168,45 @@ ip link set dev br0 up
 For mode details on how to configure CFM:
 https://github.com/microchip-ung/cfm
 
+## Tested rings
+
+Here a list of actually tested ring configurations
+
+### One simple ring (no interconnection roles)
+
+A ring with 2, 3, 4, and 8 nodes has been tested with the following layouts:
+
+- one MRM connected to 1, 2, 3, and 7 MRC
+- all nodes configured as MRA
+
+### Two rings with one interconnection
+
+Here is an ascii art of the network:
+
+    +---+   +---+     +---+   +---+
+    | A +---+ D +-----+ E +---+ H |
+    +-+-+   +-+-+     +-+-+   +-+-+
+      |       |         |       |
+    +-+-+   +-+-+     +-+-+   +-+-+
+    | B +---+ C +-----+ F +---+ G |
+    +---+   +---+     +---+   +---+
+
+Ring A-B-C-D has been configured with RingID 1, while ring E-F-G-H with RingID 2. Interconnection ring C-D-E-F has been configured with InID 1 in RC mode. Then all combinations of the MRP roles has been tested on each node.
+
+### Three rings with two interconnections
+
+Here is an ascii art of the network:
+
+    +---+   +---+     +---+   +---+     +---+   +---+
+    | A +---+ C +-----+ D +---+ G +-----+ H +---+ J |
+    +-+-+   +-+-+     +-+-+   +-+-+     +-+-+   +-+-+
+      |       |         |       |         |       |
+      |     +-+-+     +-+-+   +-+-+     +-+-+     |
+      +-----+ B +-----+ E +---+ F +-----+ K +-----+
+            +---+     +---+   +---+     +---+
+
+Ring A-B-C has been configured with RingID 1, ring D-E-F-G with RingID 2, and ring H-K-J with RingID 3. Interconnection ring B-C-D-E has been configured with InID 1 in RC mode, while interconnection ring F-G-H-K with InID 2 in RC mode. Then all combinations of the MRP roles has been tested on each node.
+
 ## Known bugs
 
 * At the moment just the Kbact ifdriver is known to work properly.
